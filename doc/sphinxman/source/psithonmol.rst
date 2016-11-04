@@ -571,7 +571,7 @@ functions (that have been exported via pybind11) documented thereat
 are accessible through the handle :samp:`{option_molecule_name}` in
 :samp:`molecule {optional_molecule_name} \\{...\\}`.
 
-*  The molecular geometry can be got and set and manipulated as a
+*  The molecular geometry can be gotten, set, and manipulated as a
    :py:class:`~psi4.core.Matrix` object. Below shows how to access
    coordinates in an input file in Python. ::
 
@@ -605,7 +605,7 @@ are accessible through the handle :samp:`{option_molecule_name}` in
        formaldehyde.print_out()                # print new molecule to output file
        compare_values(28.9950517332, formaldehyde.nuclear_repulsion_energy(), 4, "geom2 took")
 
-* Molecules can be initited from XYZ files and fragmented for SAPT computations. ::
+* Molecules can be initiated from XYZ files and fragmented for SAPT computations. ::
 
        # >>> cat mol1.xyz
        #7
