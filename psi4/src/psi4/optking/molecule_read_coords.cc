@@ -3,7 +3,7 @@
  *
  * Psi4: an open-source quantum chemistry software package
  *
- * Copyright (c) 2007-2016 The Psi4 Developers.
+ * Copyright (c) 2007-2017 The Psi4 Developers.
  *
  * The copyrights for code used from other parties are included in
  * the corresponding files.
@@ -567,12 +567,15 @@ bool stoi(string s, int *a) {
 
 // convert string to float
 bool stof(string s, double *val) {
-  double i = atof(s.c_str());
-  if (i!=0) {
-    *val = i;
-    return true;
+  double d;
+  try {
+    d = std::stod(s, NULL);
   }
-  return false;
+  catch(...) {
+    return false;
+  }
+  *val = d;
+  return true;
 }
 
 // convert string to boolean

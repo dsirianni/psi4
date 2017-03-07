@@ -3,7 +3,7 @@
  *
  * Psi4: an open-source quantum chemistry software package
  *
- * Copyright (c) 2007-2016 The Psi4 Developers.
+ * Copyright (c) 2007-2017 The Psi4 Developers.
  *
  * The copyrights for code used from other parties are included in
  * the corresponding files.
@@ -34,7 +34,7 @@ void SAPT0::exch_disp20_n5()
 {
   int nthreads = 1;
 #ifdef _OPENMP
-  nthreads = omp_get_max_threads();
+  nthreads = Process::environment.get_n_threads();
 #endif
   int rank = 0;
 
@@ -260,7 +260,7 @@ void SAPT0::exch_disp20_n4()
 {
   int nthreads = 1;
 #ifdef _OPENMP
-  nthreads = omp_get_max_threads();
+  nthreads = Process::environment.get_n_threads();
 #endif
   int rank = 0;
 
@@ -999,7 +999,7 @@ void SAPT0::v1()
 {
   int nthreads = 1;
 #ifdef _OPENMP
-  nthreads = omp_get_max_threads();
+  nthreads = Process::environment.get_n_threads();
 #endif
   int rank = 0;
 
@@ -1107,7 +1107,7 @@ void SAPT0::h1()
 {
   int nthreads = 1;
 #ifdef _OPENMP
-  nthreads = omp_get_max_threads();
+  nthreads = Process::environment.get_n_threads();
 #endif
   int rank = 0;
 
@@ -1202,7 +1202,7 @@ void SAPT0::h3()
 {
   int nthreads = 1;
 #ifdef _OPENMP
-  nthreads = omp_get_max_threads();
+  nthreads = Process::environment.get_n_threads();
 #endif
   int rank = 0;
 
@@ -1294,7 +1294,7 @@ void SAPT0::q1()
 {
   int nthreads = 1;
 #ifdef _OPENMP
-  nthreads = omp_get_max_threads();
+  nthreads = Process::environment.get_n_threads();
 #endif
   int rank = 0;
 
@@ -1406,7 +1406,7 @@ void SAPT0::q5()
 {
   int nthreads = 1; 
 #ifdef _OPENMP
-  nthreads = omp_get_max_threads();
+  nthreads = Process::environment.get_n_threads();
 #endif
   int rank = 0;
 
@@ -1568,7 +1568,7 @@ void SAPT0::q12()
 {
   int nthreads = 1;
 #ifdef _OPENMP
-  nthreads = omp_get_max_threads();
+  nthreads = Process::environment.get_n_threads();
 #endif
   int rank = 0;
 

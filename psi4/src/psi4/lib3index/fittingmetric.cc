@@ -3,7 +3,7 @@
  *
  * Psi4: an open-source quantum chemistry software package
  *
- * Copyright (c) 2007-2016 The Psi4 Developers.
+ * Copyright (c) 2007-2017 The Psi4 Developers.
  *
  * The copyrights for code used from other parties are included in
  * the corresponding files.
@@ -46,7 +46,7 @@
 #include "psi4/libmints/vector.h"
 
 //MKL Header
-#ifdef __INTEL_MKL__
+#ifdef USING_LAPACK_MKL
 #include <mkl.h>
 #endif
 
@@ -118,7 +118,7 @@ void FittingMetric::form_fitting_metric()
     int nthread = 1;
     #ifdef _OPENMP
         if (!omp_in_parallel()) {
-            nthread = omp_get_max_threads();
+            nthread = Process::environment.get_n_threads();
         }
     #endif
 
@@ -243,6 +243,8 @@ void FittingMetric::form_fitting_metric()
         }
         delete[] Tbuffer;
         delete[] Tint;
+        delete[] Obuffer;
+        delete[] Oint;
     }
 
     // If C1, form indexing and exit immediately (multiplying by 1 is not so gratifying)

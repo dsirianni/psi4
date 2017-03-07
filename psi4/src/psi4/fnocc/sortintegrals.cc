@@ -3,7 +3,7 @@
  *
  * Psi4: an open-source quantum chemistry software package
  *
- * Copyright (c) 2007-2016 The Psi4 Developers.
+ * Copyright (c) 2007-2017 The Psi4 Developers.
  *
  * The copyrights for code used from other parties are included in
  * the corresponding files.
@@ -2121,6 +2121,7 @@ void SortBlockNew(ULI nelem,ULI blockdim,struct integral*buffer,double*tmp,ULI P
      }
      // free extra memory
      free(buffer2_count);
+     free(buffer2_total);
      free(buffer2);
   }
 }
@@ -2195,7 +2196,7 @@ void SortBlock(ULI nelem,ULI blockdim,struct integral*buffer,double*tmp,ULI PSIF
 
      psio->rename_file(PSIF_DCC_TEMP,PSIFILE);
 
-     delete addr;
+     delete [] addr;
   }
 }
 

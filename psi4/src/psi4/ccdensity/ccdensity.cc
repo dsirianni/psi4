@@ -3,7 +3,7 @@
  *
  * Psi4: an open-source quantum chemistry software package
  *
- * Copyright (c) 2007-2016 The Psi4 Developers.
+ * Copyright (c) 2007-2017 The Psi4 Developers.
  *
  * The copyrights for code used from other parties are included in
  * the corresponding files.
@@ -404,18 +404,18 @@ PsiReturnType ccdensity(std::shared_ptr<Wavefunction> ref_wfn, Options& options)
         Process::environment.globals["CC ROOT 0 DIPOLE X"] = Process::environment.globals["CC DIPOLE X"];
         Process::environment.globals["CC ROOT 0 DIPOLE Y"] = Process::environment.globals["CC DIPOLE Y"];
         Process::environment.globals["CC ROOT 0 DIPOLE Z"] = Process::environment.globals["CC DIPOLE Z"];
-        Process::environment.globals["CC ROOT 0 QUADRUPOLE XX"] = Process::environment.globals["CC DIPOLE XX"];
-        Process::environment.globals["CC ROOT 0 QUADRUPOLE XY"] = Process::environment.globals["CC DIPOLE XY"];
-        Process::environment.globals["CC ROOT 0 QUADRUPOLE XZ"] = Process::environment.globals["CC DIPOLE XZ"];
-        Process::environment.globals["CC ROOT 0 QUADRUPOLE YY"] = Process::environment.globals["CC DIPOLE YY"];
-        Process::environment.globals["CC ROOT 0 QUADRUPOLE YZ"] = Process::environment.globals["CC DIPOLE YZ"];
-        Process::environment.globals["CC ROOT 0 QUADRUPOLE ZZ"] = Process::environment.globals["CC DIPOLE ZZ"];
+        Process::environment.globals["CC ROOT 0 QUADRUPOLE XX"] = Process::environment.globals["CC QUADRUPOLE XX"];
+        Process::environment.globals["CC ROOT 0 QUADRUPOLE XY"] = Process::environment.globals["CC QUADRUPOLE XY"];
+        Process::environment.globals["CC ROOT 0 QUADRUPOLE XZ"] = Process::environment.globals["CC QUADRUPOLE XZ"];
+        Process::environment.globals["CC ROOT 0 QUADRUPOLE YY"] = Process::environment.globals["CC QUADRUPOLE YY"];
+        Process::environment.globals["CC ROOT 0 QUADRUPOLE YZ"] = Process::environment.globals["CC QUADRUPOLE YZ"];
+        Process::environment.globals["CC ROOT 0 QUADRUPOLE ZZ"] = Process::environment.globals["CC QUADRUPOLE ZZ"];
       }
 
       //Get the NOs/occupation numbers
-      std::pair<SharedMatrix,SharedVector> NOa_pair = oe->Na_mo();
-      std::pair<SharedMatrix,SharedVector> NOb_pair = NOa_pair;
-      if(!ref_wfn->same_a_b_dens()){
+      std::pair<SharedMatrix, SharedVector> NOa_pair = oe->Na_mo();
+      std::pair<SharedMatrix, SharedVector> NOb_pair = NOa_pair;
+      if (!ref_wfn->same_a_b_dens()) {
         SharedMatrix cc_Db = oe->Db_so();
         SharedMatrix ref_Db = ref_wfn->Db();
         ref_Db->copy(cc_Db);
@@ -426,16 +426,25 @@ PsiReturnType ccdensity(std::shared_ptr<Wavefunction> ref_wfn, Options& options)
       if(params.write_nos){
         MoldenWriter nowriter(ref_wfn);
         std::string mol_name = ref_wfn->molecule()->name();
-        nowriter.writeNO(mol_name+"NO.molden",NOa_pair.first,NOb_pair.first,
-            NOa_pair.second,NOb_pair.second);
+        SharedMatrix NO_Ca = Matrix::doublet(Ca, NOa_pair.first, false, false);
+        SharedMatrix NO_Cb = Matrix::doublet(Cb, NOb_pair.first, false, false);
+        nowriter.write(mol_name + "NO.molden", NO_Ca, NO_Cb, NOa_pair.second, NOb_pair.second,
+                       NOa_pair.second, NOb_pair.second, options.get_bool("MOLDEN_WITH_VIRTUAL"));
       }
     }else{
       // this should set psivars correctly for root Properties
-      oe->set_title(cc_prop_label+" ROOT "+std::to_string(i));
+      oe->set_title(cc_prop_label + " ROOT " + std::to_string(i));
       oe->compute();
+      /*- Process::environment.globals["CC ROOT n DIPOLE X"] -*/
+      /*- Process::environment.globals["CC ROOT n DIPOLE Y"] -*/
+      /*- Process::environment.globals["CC ROOT n DIPOLE Z"] -*/
+      /*- Process::environment.globals["CC ROOT n QUADRUPOLE XX"] -*/
+      /*- Process::environment.globals["CC ROOT n QUADRUPOLE XY"] -*/
+      /*- Process::environment.globals["CC ROOT n QUADRUPOLE XZ"] -*/
+      /*- Process::environment.globals["CC ROOT n QUADRUPOLE YY"] -*/
+      /*- Process::environment.globals["CC ROOT n QUADRUPOLE YZ"] -*/
+      /*- Process::environment.globals["CC ROOT n QUADRUPOLE ZZ"] -*/
     }
-
-
 
     free_block(moinfo.opdm);
 

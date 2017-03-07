@@ -3,7 +3,7 @@
 .. #
 .. # Psi4: an open-source quantum chemistry software package
 .. #
-.. # Copyright (c) 2007-2016 The Psi4 Developers.
+.. # Copyright (c) 2007-2017 The Psi4 Developers.
 .. #
 .. # The copyrights for code used from other parties are included in
 .. # the corresponding files.
@@ -127,7 +127,7 @@ can interface to K\ |a_acute|\ llay's MRCC code (see :ref:`MRCC <sec:mrcc>`).
    +               +------------+-----------+-----------+---------------+-----------+
    |               | ROHF       | Y         | Y         | Y             | ---       |
    +---------------+------------+-----------+-----------+---------------+-----------+
-   | CCSD(T)       | RHF        | Y         | ---       | n/a           | n/a       |
+   | CCSD(T)       | RHF        | Y         | Y         | n/a           | n/a       |
    +               +------------+-----------+-----------+---------------+-----------+
    |               | UHF        | Y         | Y         | n/a           | n/a       |
    +               +------------+-----------+-----------+---------------+-----------+

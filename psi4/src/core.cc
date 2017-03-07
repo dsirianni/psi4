@@ -3,7 +3,7 @@
  *
  * Psi4: an open-source quantum chemistry software package
  *
- * Copyright (c) 2007-2016 The Psi4 Developers.
+ * Copyright (c) 2007-2017 The Psi4 Developers.
  *
  * The copyrights for code used from other parties are included in
  * the corresponding files.
@@ -52,24 +52,33 @@
 #include "psi4/libpsio/psio.h"
 #include "psi4/libmints/wavefunction.h"
 #include "psi4/psifiles.h"
+#include "psi4/libmints/writer_file_prefix.h"
 
 #define STRINGIFY(x) #x
 #define TOSTRING(x) STRINGIFY(x)
+
+// definitions for Fortran Runtime library init/finalize
+extern "C" {
+    void for_rtl_init_(int *, char **);
+    int for_rtl_finish_();
+    int for_set_reentrancy(int *);
+}
 
 using namespace psi;
 
 // Python helper wrappers
 void export_benchmarks(py::module&);
 void export_blas_lapack(py::module&);
+void export_cubeprop(py::module&);
+void export_efp(py::module&);
+void export_fock(py::module&);
+void export_functional(py::module&);
+void export_mints(py::module&);
+void export_misc(py::module&);
+void export_oeprop(py::module&);
 void export_plugins(py::module&);
 void export_psio(py::module&);
-void export_mints(py::module&);
-void export_functional(py::module&);
-void export_fock(py::module&);
-void export_oeprop(py::module&);
-void export_efp(py::module&);
-void export_cubeprop(py::module&);
-void export_misc(py::module&);
+void export_wavefunction(py::module&);
 
 // In export_plugins.cc
 void py_psi_plugin_close_all();
@@ -88,8 +97,6 @@ char *psi_file_prefix;
 std::string outfile_name;
 std::string restart_id;
 std::shared_ptr<PsiOutStream> outfile;
-
-std::string get_writer_file_prefix(std::string molecule_name);
 
 // Wavefunction returns
 namespace adc       { SharedWavefunction       adc(SharedWavefunction, Options&); }
@@ -125,9 +132,6 @@ PsiReturnType mrcc_generate_input(SharedWavefunction, Options&, const py::dict&)
 PsiReturnType mrcc_load_ccdensities(SharedWavefunction, Options&, const py::dict&);
 }
 
-// Should die soon
-namespace transqt2 { PsiReturnType transqt2(SharedWavefunction, Options&); }
-
 // Finite difference functions
 namespace findif {
 std::vector<SharedMatrix> fd_geoms_1_0(std::shared_ptr<Molecule>, Options&);
@@ -146,7 +150,6 @@ SharedMatrix displace_atom(SharedMatrix geom, const int atom,
 }
 
 // CC functions
-namespace ccsort { PsiReturnType ccsort(Options&); }
 namespace cctransort { PsiReturnType cctransort(SharedWavefunction, Options&); }
 namespace cctriples { PsiReturnType cctriples(SharedWavefunction, Options&); }
 namespace cchbar { PsiReturnType cchbar(SharedWavefunction, Options&); }
@@ -409,19 +412,6 @@ double py_psi_fisapt(SharedWavefunction ref_wfn)
         return 0.0;
 }
 
-double py_psi_transqt2(SharedWavefunction ref_wfn)
-{
-    py_psi_prepare_options_for_module("TRANSQT2");
-    transqt2::transqt2(ref_wfn, Process::environment.options);
-    return 0.0;
-}
-
-double py_psi_ccsort()
-{
-    py_psi_prepare_options_for_module("CCSORT");
-    ccsort::ccsort(Process::environment.options);
-    return 0.0;
-}
 
 void py_psi_cctransort(SharedWavefunction ref_wfn)
 {
@@ -452,22 +442,6 @@ double py_psi_cctriples(SharedWavefunction ref_wfn)
         return 0.0;
 }
 
-std::shared_ptr<psi::efp::EFP> py_psi_efp_init()
-{
-    py_psi_prepare_options_for_module("EFP");
-    if (psi::efp::efp_init(Process::environment.options) == Success) {
-        return Process::environment.get_efp();
-    }
-    else
-        throw PSIEXCEPTION("Unable to initialize EFP library.");
-}
-
-void py_psi_efp_set_options()
-{
-    py_psi_prepare_options_for_module("EFP");
-    Process::environment.get_efp()->set_options();
-}
-
 SharedWavefunction py_psi_fnocc(SharedWavefunction ref_wfn)
 {
     py_psi_prepare_options_for_module("FNOCC");
@@ -490,7 +464,7 @@ double py_psi_gdma(SharedWavefunction ref_wfn, const std::string &datfilename)
 #else
 double py_psi_gdma(SharedWavefunction ref_wfn, const std::string &datfilename)
 {
-    throw PSIEXCEPTION("GDMA not enabled. Recompile with it enabled.");
+    throw PSIEXCEPTION("GDMA not enabled. Recompile with -DENABLE_gdma.");
 }
 #endif
 
@@ -503,7 +477,7 @@ SharedWavefunction py_psi_dmrg(SharedWavefunction ref_wfn)
 #else
 double py_psi_dmrg(SharedWavefunction ref_wfn)
 {
-    throw PSIEXCEPTION("DMRG not enabled.");
+    throw PSIEXCEPTION("DMRG not enabled. Recompile with -DENABLE_CheMPS2");
 }
 #endif
 
@@ -654,6 +628,14 @@ std::vector<std::string> py_psi_get_global_option_list()
     return Process::environment.options.list_globals();
 }
 
+void py_psi_clean_options()
+{
+    Process::environment.options.clear();
+    Process::environment.options.set_read_globals(true);
+    read_options("", Process::environment.options, true);
+    Process::environment.options.set_read_globals(false);
+}
+
 void py_psi_print_out(std::string s)
 {
     (*outfile) << s;
@@ -783,13 +765,13 @@ bool py_psi_set_local_option_array(std::string const& module, std::string const&
     }
     size_t size = len(values);
     for (int n = 0; n < size; ++n) {
-        try {
+        if (py::isinstance<py::list>(values[n])) {
             py::list l = values[n].cast<py::list>();
             DataType *newentry = Process::environment.options.set_local_array_array(module, nonconst_key, entry);
             // Now we need to recurse, to fill in the data
             py_psi_set_local_option_array(module, key, l, newentry);
         }
-        catch (py::cast_error e) {
+        else {
             // This is not a list; try to cast to a string
             try {
                 std::string s = values[n].cast<std::string>();
@@ -831,13 +813,13 @@ bool py_psi_set_global_option_array(std::string const& key, py::list values, Dat
     }
     size_t size = len(values);
     for (int n = 0; n < size; ++n) {
-        try {
+        if (py::isinstance<py::list>(values[n])) {
             py::list l = values[n].cast<py::list>();
             DataType *newentry = Process::environment.options.set_global_array_array(nonconst_key, entry);
             // Now we need to recurse, to fill in the data
             py_psi_set_global_option_array(key, l, newentry);
         }
-        catch (py::cast_error e) {
+        else {
             // This is not a list; try to cast to a string
             try {
                 std::string s = values[n].cast<std::string>();
@@ -936,7 +918,7 @@ py::object py_psi_get_local_option(std::string const& module, std::string const&
     else if (data.type() == "double")
         return py::cast(data.to_double());
     else if (data.type() == "array")
-        return py::cast(data.to_list());
+        return py::object(data.to_list());
 
     return py::object();
 }
@@ -953,7 +935,7 @@ py::object py_psi_get_global_option(std::string const& key)
     else if (data.type() == "double")
         return py::cast(data.to_double());
     else if (data.type() == "array")
-        return py::cast(data.to_list());
+        return py::object(data.to_list());
 
     return py::object();
 }
@@ -972,7 +954,7 @@ py::object py_psi_get_option(std::string const& module, std::string const& key)
     else if (data.type() == "double")
         return py::cast(data.to_double());
     else if (data.type() == "array")
-        return py::cast(data.to_list());
+        return py::object(data.to_list());
 
     return py::object();
 }
@@ -1005,11 +987,6 @@ std::shared_ptr<Molecule> py_psi_get_legacy_molecule()
     return Process::environment.legacy_molecule();
 }
 
-std::shared_ptr<psi::efp::EFP> py_psi_get_active_efp()
-{
-    return Process::environment.get_efp();
-}
-
 void py_psi_set_gradient(SharedMatrix grad)
 {
     Process::environment.set_gradient(grad);
@@ -1018,6 +995,28 @@ void py_psi_set_gradient(SharedMatrix grad)
 SharedMatrix py_psi_get_gradient()
 {
     return Process::environment.gradient();
+}
+
+std::shared_ptr<psi::efp::EFP> py_psi_efp_init()
+{
+    py_psi_prepare_options_for_module("EFP");
+    if (psi::efp::efp_init(Process::environment.options) == Success) {
+        return Process::environment.get_efp();
+    }
+    else
+        throw PSIEXCEPTION("Unable to initialize EFP library.");
+}
+
+std::shared_ptr<psi::efp::EFP> py_psi_get_active_efp()
+{
+    return Process::environment.get_efp();
+}
+
+#ifdef USING_libefp
+void py_psi_efp_set_options()
+{
+    py_psi_prepare_options_for_module("EFP");
+    Process::environment.get_efp()->set_options();
 }
 
 void py_psi_set_efp_torque(SharedMatrix torq)
@@ -1038,6 +1037,7 @@ SharedMatrix py_psi_get_efp_torque()
         return Process::environment.efp_torque();
     }
 }
+#endif
 
 void py_psi_set_frequencies(std::shared_ptr<Vector> freq)
 {
@@ -1090,7 +1090,7 @@ void py_psi_set_memory(unsigned long int mem, bool quiet)
 {
     Process::environment.set_memory(mem);
     if (!quiet){
-        outfile->Printf("\n  Memory set to %7.3f %s by Python script.\n", (mem > 1000000000 ? mem / 1.0E9 : mem / 1.0E6), \
+        outfile->Printf("\n  Memory set to %7.3f %s by Python driver.\n", (mem > 1000000000 ? mem / 1.0E9 : mem / 1.0E6), \
             (mem > 1000000000 ? "GiB" : "MiB"));
     }
 }
@@ -1100,9 +1100,20 @@ unsigned long int py_psi_get_memory()
     return Process::environment.get_memory();
 }
 
-void py_psi_set_n_threads(int nthread)
+void py_psi_set_n_threads(unsigned int nthread, bool quiet)
 {
+#ifdef _OPENMP
     Process::environment.set_n_threads(nthread);
+    if (!quiet){
+        outfile->Printf("  Threads set to %d by Python driver.\n", nthread);
+    }
+#else
+    Process::environment.set_n_threads(1);
+    if (!quiet){
+        outfile->Printf("  Python driver attempted to set threads to %d.\n"
+                        "  Psi4 was compiled without OpenMP, setting threads to 1.\n", nthread);
+    }
+#endif
 }
 
 int py_psi_get_n_threads()
@@ -1195,6 +1206,10 @@ bool psi4_python_module_initialize()
     read_options("", Process::environment.options, true);
     Process::environment.options.set_read_globals(false);
 
+#ifdef INTEL_Fortran_ENABLED
+    for_rtl_init_(NULL, NULL);
+#endif
+
     initialized = true;
 
     return true;
@@ -1202,6 +1217,10 @@ bool psi4_python_module_initialize()
 
 void psi4_python_module_finalize()
 {
+#ifdef INTEL_Fortran_ENABLED
+    for_rtl_finish_();
+#endif
+
     py_psi_plugin_close_all();
 
     // Shut things down:
@@ -1247,6 +1266,7 @@ PYBIND11_PLUGIN(core) {
     core.def("version", py_psi_version, "Returns the version ID of this copy of Psi.");
     core.def("git_version", py_psi_git_version, "Returns the git version of this copy of Psi.");
     core.def("clean", py_psi_clean, "Function to remove scratch files. Call between independent jobs.");
+    core.def("clean_options", py_psi_clean_options, "Function to reset options to clean state.");
 
     core.def("get_writer_file_prefix", get_writer_file_prefix, "Returns the prefix to use for writing files for external programs.");
     // Benchmarks
@@ -1289,13 +1309,17 @@ PYBIND11_PLUGIN(core) {
     core.def("set_gradient",
         py_psi_set_gradient,
         "Assigns the global gradient to the values stored in the N by 3 Matrix argument.");
+    core.def("efp_init", py_psi_efp_init, "Initializes the EFP library and returns an EFP object.");
     core.def("get_active_efp", &py_psi_get_active_efp, "Returns the currently active EFP object.");
+#ifdef USING_libefp
+    core.def("efp_set_options", py_psi_efp_set_options, "Set EFP options from environment options object.");
     core.def("get_efp_torque",
         py_psi_get_efp_torque,
         "Returns the most recently computed gradient for the EFP portion, as a Nefp by 6 Matrix object.");
     core.def("set_efp_torque",
         py_psi_set_efp_torque,
         "Assigns the global EFP gradient to the values stored in the Nefp by 6 Matrix argument.");
+#endif
     core.def("get_frequencies",
         py_psi_get_frequencies,
         "Returns the most recently computed frequencies, as a 3N-6 Vector object.");
@@ -1307,8 +1331,8 @@ PYBIND11_PLUGIN(core) {
         "Assigns the global frequencies to the values stored in the 3N-6 Vector argument.");
     core.def("set_memory", py_psi_set_memory, py::arg("memory"), py::arg("quiet")=false, "Sets the memory available to Psi (in bytes).");
     core.def("get_memory", py_psi_get_memory, "Returns the amount of memory available to Psi (in bytes).");
-    core.def("set_nthread", &py_psi_set_n_threads, "Sets the number of threads to use in SMP parallel computations.");
-    core.def("nthread", &py_psi_get_n_threads, "Returns the number of threads to use in SMP parallel computations.");
+    core.def("set_num_threads", py_psi_set_n_threads, py::arg("nthread"), py::arg("quiet")=false, "Sets the number of threads to use in SMP parallel computations.");
+    core.def("get_num_threads", py_psi_get_n_threads, "Returns the number of threads to use in SMP parallel computations.");
 //    core.def("mol_from_file",&LibBabel::ParseFile,"Reads a molecule from another input file");
     core.def("set_parent_symmetry",
         py_psi_set_parent_symmetry,
@@ -1437,9 +1461,6 @@ PYBIND11_PLUGIN(core) {
     core.def("fisapt", py_psi_fisapt, "Runs the functional-group intramolecular symmetry adapted perturbation theory code.");
     core.def("psimrcc", py_psi_psimrcc, "Runs the multireference coupled cluster code.");
     core.def("optking", py_psi_optking, "Runs the geometry optimization / frequency analysis code.");
-//    core.def("transqt", py_psi_transqt, "Runs the (deprecated) transformation code.");
-    core.def("transqt2", py_psi_transqt2, "Runs the (deprecated) transformation code.");
-    core.def("ccsort", py_psi_ccsort, "Runs CCSORT, which reorders integrals for use in the coupled cluster codes.");
     core.def("cctransort", py_psi_cctransort, "Runs CCTRANSORT, which transforms and reorders integrals for use in the coupled cluster codes.");
     core.def("ccenergy", py_psi_ccenergy, "Runs the coupled cluster energy code.");
     core.def("cctriples", py_psi_cctriples, "Runs the coupled cluster (T) energy code.");
@@ -1447,8 +1468,6 @@ PYBIND11_PLUGIN(core) {
     core.def("dmrg", py_psi_dmrg, "Runs the DMRG code.");
     core.def("run_gdma", py_psi_gdma, "Runs the GDMA code.");
     core.def("fnocc", py_psi_fnocc, "Runs the fno-ccsd(t)/qcisd(t)/mp4/cepa energy code");
-    core.def("efp_init", py_psi_efp_init, "Initializes the EFP library and returns an EFP object.");
-    core.def("efp_set_options", py_psi_efp_set_options, "Set EFP options from environment options object.");
     core.def("cchbar", py_psi_cchbar, "Runs the code to generate the similarity transformed Hamiltonian.");
     core.def("cclambda", py_psi_cclambda, "Runs the coupled cluster lambda equations code.");
     core.def("ccdensity", py_psi_ccdensity, "Runs the code to compute coupled cluster density matrices.");
@@ -1476,6 +1495,7 @@ PYBIND11_PLUGIN(core) {
     export_functional(core);
     export_misc(core);
     export_fock(core);
+    export_wavefunction(core);
 
     // ??
     //py::class_<Process::Environment>(core, "Environment")

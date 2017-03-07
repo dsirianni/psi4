@@ -3,7 +3,7 @@
  *
  * Psi4: an open-source quantum chemistry software package
  *
- * Copyright (c) 2007-2016 The Psi4 Developers.
+ * Copyright (c) 2007-2017 The Psi4 Developers.
  *
  * The copyrights for code used from other parties are included in
  * the corresponding files.
@@ -82,12 +82,14 @@ public:
     Vector(const Vector &copy);
 
     /// Constructor, allocates memory
+    /// (this should be deprecated in favor of the Dimension-based version)
     Vector(int nirrep, int *dimpi);
 
     /// Constructor, convenience for 1 irrep
     Vector(int dim);
 
     /// Constructor, allocates memory
+    /// (this should be deprecated in favor of the Dimension-based version)
     Vector(const std::string &name, int nirrep, int *dimpi);
 
     /// Constructor, convenience for 1 irrep
@@ -143,43 +145,19 @@ public:
     void add(const std::vector<double> &rhs);
 
     /// Adds other vector to this
-    void add(const std::shared_ptr<Vector> &other) {
-        for (int h = 0; h < nirrep_; ++h) {
-            for (int m = 0; m < dimpi_[h]; ++m) {
-                vector_[h][m] += other->vector_[h][m];
-            }
-        }
-    }
+    void add(const std::shared_ptr<Vector> &other);
+    void add(const Vector &other);
 
     /// Subtracts other vector from this
-    void subtract(const std::shared_ptr<Vector> &other) {
-        for (int h = 0; h < nirrep_; ++h) {
-            for (int m = 0; m < dimpi_[h]; ++m) {
-                vector_[h][m] -= other->vector_[h][m];
-            }
-        }
-    }
+    void subtract(const std::shared_ptr<Vector> &other);
+    void subtract(const Vector &other);
+
+    void axpy(double scale, const std::shared_ptr<Vector> &other);
+    void axpy(double scale, const Vector &other);
 
     /// Zeros the vector out
     void zero();
 
-    /// Adds other vector to this
-    void add(const Vector &other) {
-        for (int h = 0; h < nirrep_; ++h) {
-            for (int m = 0; m < dimpi_[h]; ++m) {
-                vector_[h][m] += other.vector_[h][m];
-            }
-        }
-    }
-
-    /// Subtracts other vector from this
-    void subtract(const Vector &other) {
-        for (int h = 0; h < nirrep_; ++h) {
-            for (int m = 0; m < dimpi_[h]; ++m) {
-                vector_[h][m] -= other.vector_[h][m];
-            }
-        }
-    }
 
     double &operator()(int i) { return vector_[0][i]; }
 
@@ -204,7 +182,7 @@ public:
     int dim(int h = 0) const { return dimpi_[h]; }
 
     /// Returns the dimension array
-    int *dimpi() const { return dimpi_; }
+    const Dimension& dimpi() const { return dimpi_; }
 
     /// Returns the number of irreps
     int nirrep() const { return nirrep_; }
@@ -242,10 +220,14 @@ public:
     void gemv(bool transa, double alpha, Matrix *A, Vector *X, double beta);
 
     /// Vector dot product
+    double vector_dot(const std::shared_ptr<Vector> &other);
+    double vector_dot(const Vector &other);
     double dot(Vector *X);
 
     /// Vector norm
     double norm();
+    double sum_of_squares();
+    double rms();
 
     /// Scale the elements of the vector
     void scale(const double &sc);

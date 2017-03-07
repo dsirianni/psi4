@@ -3,7 +3,7 @@
  *
  * Psi4: an open-source quantum chemistry software package
  *
- * Copyright (c) 2007-2016 The Psi4 Developers.
+ * Copyright (c) 2007-2017 The Psi4 Developers.
  *
  * The copyrights for code used from other parties are included in
  * the corresponding files.
@@ -49,6 +49,8 @@ CubeProperties::CubeProperties(SharedWavefunction wfn) :
     options_(Process::environment.options)
 {
     basisset_ = wfn->basisset();
+    if (wfn->basisset_exists("DF_BASIS_SCF"))
+        auxiliary_ = wfn->get_basisset("DF_BASIS_SCF");
 
     Ca_ = wfn->Ca_subset("AO", "ALL");
     Da_ = wfn->Da_subset("AO");
@@ -90,6 +92,7 @@ void CubeProperties::common_init()
 {
     grid_ = std::shared_ptr<CubicScalarGrid>(new CubicScalarGrid(basisset_, options_));
     grid_->set_filepath(options_.get_str("CUBEPROP_FILEPATH"));
+    grid_->set_auxiliary_basis(auxiliary_);
 }
 void CubeProperties::print_header()
 {

@@ -3,7 +3,7 @@
  *
  * Psi4: an open-source quantum chemistry software package
  *
- * Copyright (c) 2007-2016 The Psi4 Developers.
+ * Copyright (c) 2007-2017 The Psi4 Developers.
  *
  * The copyrights for code used from other parties are included in
  * the corresponding files.
@@ -111,7 +111,7 @@ void HF::common_init()
 
     nmo_ = 0;
     nso_ = 0;
-    int* dimpi = factory_->colspi();
+    const Dimension& dimpi = factory_->colspi();
     for (int h = 0; h< factory_->nirrep(); h++){
         nsopi_[h] = dimpi[h];
         nmopi_[h] = nsopi_[h]; //For now, may change in S^-1/2
@@ -153,20 +153,20 @@ void HF::common_init()
         if(old_pg){
             // This is one of a series of displacements;  check the dimension against the parent point group
             size_t full_nirreps = old_pg->char_table().nirrep();
-            if(options_["DOCC"].size() != full_nirreps)
-                throw PSIEXCEPTION("Input DOCC array has the wrong dimensions");
-            int *temp_docc = new int[full_nirreps];
-            for(int h = 0; h < full_nirreps; ++h)
+	    if(options_["DOCC"].size() != full_nirreps)
+	        throw PSIEXCEPTION("Input DOCC array has the wrong dimensions");
+            Dimension temp_docc(full_nirreps);
+            for(int h = 0; h < full_nirreps; ++h) {
                 temp_docc[h] = options_["DOCC"][h].to_integer();
-            map_irreps(temp_docc);
-            doccpi_ = temp_docc;
-            delete[] temp_docc;
+	    }
+            doccpi_ = map_irreps(temp_docc);
         }else{
             // This is a normal calculation; check the dimension against the current point group then read
             if(options_["DOCC"].size() != nirreps)
                 throw PSIEXCEPTION("Input DOCC array has the wrong dimensions");
-            for(int h = 0; h < nirreps; ++h)
-                doccpi_[h] = options_["DOCC"][h].to_integer();
+            for(int h = 0; h < nirreps; ++h) {
+	      doccpi_[h] = options_["DOCC"][h].to_integer();
+	    }
         }
     } // else take the reference wavefunctions doccpi
 
@@ -180,20 +180,27 @@ void HF::common_init()
             size_t full_nirreps = old_pg->char_table().nirrep();
             if(options_["SOCC"].size() != full_nirreps)
                 throw PSIEXCEPTION("Input SOCC array has the wrong dimensions");
-            int *temp_socc = new int[full_nirreps];
-            for(int h = 0; h < full_nirreps; ++h)
+            Dimension temp_socc(full_nirreps);
+            for(int h = 0; h < full_nirreps; ++h) {
                 temp_socc[h] = options_["SOCC"][h].to_integer();
-            map_irreps(temp_socc);
-            soccpi_ = temp_socc;
-            delete[] temp_socc;
+	    }
+            soccpi_ = map_irreps(temp_socc);
         }else{
             // This is a normal calculation; check the dimension against the current point group then read
             if(options_["SOCC"].size() != nirreps)
                 throw PSIEXCEPTION("Input SOCC array has the wrong dimensions");
-            for(int h = 0; h < nirreps; ++h)
+            for(int h = 0; h < nirreps; ++h) {
                 soccpi_[h] = options_["SOCC"][h].to_integer();
+	    }
         }
     } // else take the reference wavefunctions soccpi
+
+    // Check that we have enough basis functions
+    for(int h = 0; h < nirreps; ++h) {
+      if(doccpi_[h]+soccpi_[h] > nmopi_[h]) {
+	throw PSIEXCEPTION("Not enough basis functions to satisfy requested occupancies");
+      }
+    }
 
     if (input_socc_ || input_docc_) {
         for (int h = 0; h < nirrep_; h++) {
@@ -527,7 +534,7 @@ double HF::finalize_E()
 
     // At this point, we are not doing any more SCF cycles
     // and we can compute and print final quantities.
-
+#ifdef USING_libefp
     if ( Process::environment.get_efp()->get_frag_count() > 0 ) {
         Process::environment.get_efp()->compute();
 
@@ -542,7 +549,7 @@ double HF::finalize_E()
 
         outfile->Printf("    Total SCF including Total EFP %20.12f [Eh]\n", E_);
     }
-
+#endif
 
     outfile->Printf( "\n  ==> Post-Iterations <==\n\n");
 
@@ -738,7 +745,7 @@ void HF::print_header()
 {
     int nthread = 1;
     #ifdef _OPENMP
-        nthread = omp_get_max_threads();
+        nthread = Process::environment.get_n_threads();
     #endif
 
 
@@ -1004,7 +1011,7 @@ void HF::form_Shalf()
     eigval_store->copy(eigval.get());
 
     // Convert the eigenvales to 1/sqrt(eigenvalues)
-    int *dimpi = eigval->dimpi();
+    const Dimension& dimpi = eigval->dimpi();
     double min_S = fabs(eigval->get(0,0));
     for (int h=0; h<nirrep_; ++h) {
         for (int i=0; i<dimpi[h]; ++i) {
@@ -1078,6 +1085,13 @@ void HF::form_Shalf()
 
         if (print_)
             outfile->Printf("  Overall, %d of %d possible MOs eliminated.\n\n",delta_mos,nso_);
+
+	// Double check occupation vectors
+	for(int h = 0; h < eigval->nirrep(); ++h) {
+	  if(doccpi_[h]+soccpi_[h] > nmopi_[h]) {
+	    throw PSIEXCEPTION("Not enough molecular orbitals to satisfy requested occupancies");
+	  }
+	}
 
         // Refreshes twice in RHF, no big deal
         epsilon_a_->init(nmopi_);
@@ -1346,13 +1360,13 @@ void HF::guess()
             outfile->Printf( "  SCF Guess: Orbitals guess was supplied from a previous computation.\n\n");
 
         std::string reference = options_.get_str("REFERENCE");
-        bool single_orb = ((reference == "RHF") || (reference == "ROHF"));
+        bool single_orb = (reference == "RHF");
 
         if (single_orb){
             guess_Cb_ = guess_Ca_;
         } else {
             if (!guess_Cb_){
-                throw PSIEXCEPTION("Guess Ca was set, but did not find a matching Cb\n");
+                throw PSIEXCEPTION("Guess Ca was set, but did not find a matching Cb!\n");
             }
         }
 
@@ -1388,10 +1402,11 @@ void HF::guess()
             nbetapi_ = guess_Cb_->colspi();
             nalpha_ = nalphapi_.sum();
             nbeta_ = nbetapi_.sum();
-            doccpi_ = nalphapi_;
             soccpi_ = nalphapi_ - nbetapi_;
+            doccpi_ = nalphapi_ - soccpi_;
         }
 
+        format_guess();
         form_D();
 
         // This is a guess iteration similar to SAD
@@ -1416,7 +1431,7 @@ void HF::guess()
 
         Fa_->zero(); //Try Fa_{mn} = S_{mn} (H_{mm} + H_{nn})/2
         int h, i, j;
-        int *opi = S_->rowspi();
+        const int *opi = S_->rowspi();
         int nirreps = S_->nirrep();
         for (h=0; h<nirreps; ++h) {
             for (i=0; i<opi[h]; ++i) {
@@ -1463,273 +1478,10 @@ void HF::guess()
     E_ = 0.0; // don't use this guess in our convergence checks
 }
 
-// void HF::save_orbitals()
-// {
-//     psio_->open(PSIF_SCF_MOS,PSIO_OPEN_NEW);
-
-//     if (print_)
-//         outfile->Printf("\n  Saving occupied orbitals to File %d.\n", PSIF_SCF_MOS);
-
-//     psio_->write_entry(PSIF_SCF_MOS,"SCF ENERGY",(char *) &(E_),sizeof(double));
-//     psio_->write_entry(PSIF_SCF_MOS,"NIRREP",(char *) &(nirrep_),sizeof(int));
-//     psio_->write_entry(PSIF_SCF_MOS,"NSOPI",(char *) &(nsopi_[0]),nirrep_*sizeof(int));
-//     psio_->write_entry(PSIF_SCF_MOS,"NALPHAPI",(char *) &(nalphapi_[0]),nirrep_*sizeof(int));
-//     psio_->write_entry(PSIF_SCF_MOS,"NBETAPI",(char *) &(nbetapi_[0]),nirrep_*sizeof(int));
-
-//     char *basisname = strdup(options_.get_str("BASIS").c_str());
-//     int basislength = strlen(options_.get_str("BASIS").c_str()) + 1;
-//     int nbf = basisset_->nbf();
-
-//     psio_->write_entry(PSIF_SCF_MOS,"BASIS NAME LENGTH",(char *)(&basislength),sizeof(int));
-//     psio_->write_entry(PSIF_SCF_MOS,"BASIS NAME",basisname,basislength*sizeof(char));
-//     psio_->write_entry(PSIF_SCF_MOS,"NUMBER OF BASIS FUNCTIONS",(char *)(&nbf),sizeof(int));
-
-//     // upon loading, need to know what value of puream was used
-//     int old_puream = (basisset_->has_puream() ? 1 : 0);
-//     psio_->write_entry(PSIF_SCF_MOS,"PUREAM",(char *)(&old_puream),sizeof(int));
-
-//     SharedMatrix Ctemp_a(new Matrix("ALPHA MOS", nirrep_, nsopi_, nalphapi_));
-//     for (int h = 0; h < nirrep_; h++)
-//         for (int m = 0; m<nsopi_[h]; m++)
-//             for (int i = 0; i<nalphapi_[h]; i++)
-//                 Ctemp_a->set(h,m,i,Ca_->get(h,m,i));
-//     Ctemp_a->save(psio_, PSIF_SCF_MOS, Matrix::SubBlocks);
-
-//     SharedMatrix Ctemp_b(new Matrix("BETA MOS", nirrep_, nsopi_, nbetapi_));
-//     for (int h = 0; h < nirrep_; h++)
-//         for (int m = 0; m<nsopi_[h]; m++)
-//             for (int i = 0; i<nbetapi_[h]; i++)
-//                 Ctemp_b->set(h,m,i,Cb_->get(h,m,i));
-//     Ctemp_b->save(psio_, PSIF_SCF_MOS, Matrix::SubBlocks);
-//     // Write Fock matrix to file 280 after removing symmetry
-//     MintsHelper helper(basisset_, options_, 0);
-//     SharedMatrix sotoao = helper.petite_list()->sotoao();
-//     SharedMatrix Fa(new Matrix(nbf,nbf));
-//     SharedMatrix Fb(new Matrix(nbf,nbf));
-//     Fa->remove_symmetry(Fa_,sotoao);
-//     Fb->remove_symmetry(Fb_,sotoao);
-//     Fa->set_name("ALPHA FOCK C1");
-//     Fb->set_name("BETA FOCK C1");
-//     Fa->save(psio_, PSIF_SCF_MOS, Matrix::SubBlocks);
-//     Fb->save(psio_, PSIF_SCF_MOS, Matrix::SubBlocks);
-
-//     psio_->close(PSIF_SCF_MOS,1);
-//     free(basisname);
-// }
-
-// bool HF::do_use_fock_guess() // only use this approach when symmetry changes are causing issues
-// {
-//   psio_->open(PSIF_SCF_MOS,PSIO_OPEN_OLD);
-//   // Compare current basis with old basis to see if fock guess will work
-//   bool is_same_basis = false;
-//   int nbf = basisset_->nbf(), basislength, old_nbf;
-//   psio_->read_entry(PSIF_SCF_MOS,"BASIS NAME LENGTH",(char *)(&basislength),sizeof(int));
-//   char *basisnamec = new char[basislength];
-//   psio_->read_entry(PSIF_SCF_MOS,"BASIS NAME",basisnamec,basislength*sizeof(char));
-//   psio_->read_entry(PSIF_SCF_MOS,"NUMBER OF BASIS FUNCTIONS",(char *)(&old_nbf),sizeof(int));
-//   std::string old_basisname(basisnamec); delete[] basisnamec;
-//   is_same_basis = (options_.get_str("BASIS") == old_basisname && nbf == old_nbf);
-//   // Compare number of irreps with old number to see if fock guess is necessary
-//   bool is_different_symmetry = false;
-//   int old_nirrep;
-//   psio_->read_entry(PSIF_SCF_MOS,"NIRREP",(char *) &(old_nirrep),sizeof(int));
-//   is_different_symmetry = (nirrep_ != old_nirrep);
-//   psio_->close(PSIF_SCF_MOS,1);
-
-//   // Final comparison: Use a Fock guess if you are using the same basis as before and
-//   //                   the symmetry has changed
-//   return (is_same_basis && is_different_symmetry);
-// }
-
-// void HF::load_fock()
-// {
-//   int nbf = basisset_->nbf();
-//   psio_->open(PSIF_SCF_MOS,PSIO_OPEN_OLD);
-//   // Read Fock matrix from file 280, applying current symmetry
-//   MintsHelper helper(basisset_, options_, 0);
-//   SharedMatrix aotoso = helper.petite_list()->aotoso();
-//   SharedMatrix Fa(new Matrix("ALPHA FOCK C1",nbf,nbf));
-//   SharedMatrix Fb(new Matrix("BETA FOCK C1",nbf,nbf));
-//   Fa->load(psio_,PSIF_SCF_MOS,Matrix::SubBlocks);
-//   Fb->load(psio_,PSIF_SCF_MOS,Matrix::SubBlocks);
-//   Fa_->apply_symmetry(Fa,aotoso);
-//   Fb_->apply_symmetry(Fb,aotoso);
-//   psio_->close(PSIF_SCF_MOS,1);
-// }
-
-// void HF::load_orbitals()
-// {
-//     psio_->open(PSIF_SCF_MOS,PSIO_OPEN_OLD);
-
-//     int basislength, old_puream;
-//     psio_->read_entry(PSIF_SCF_MOS,"BASIS NAME LENGTH",
-//         (char *)(&basislength),sizeof(int));
-//     char *basisnamec = new char[basislength];
-//     psio_->read_entry(PSIF_SCF_MOS,"BASIS NAME",basisnamec,
-//         basislength*sizeof(char));
-//     psio_->read_entry(PSIF_SCF_MOS,"PUREAM",(char *)(&old_puream),
-//         sizeof(int));
-//     bool old_forced_puream = (old_puream) ? true : false;
-//     std::string basisname(basisnamec);
-
-//     if (basisname == "")
-//         throw PSIEXCEPTION("SCF::load_orbitals: Custom basis sets not allowed for projection from a previous SCF");
-
-//     if (print_) {
-//         if (basisname != options_.get_str("BASIS")) {
-//                 outfile->Printf("  Computing basis set projection from %s to %s.\n", \
-//                     basisname.c_str(),options_.get_str("BASIS").c_str());
-//         } else {
-//                 outfile->Printf("  Using orbitals from previous SCF, no projection.\n");
-//         }
-//     }
-
-//     std::shared_ptr<BasisSet> dual_basis;
-//     if (basisname != options_.get_str("BASIS")) {
-//         //std::shared_ptr<BasisSetParser> parser(new Gaussian94BasisSetParser(old_forced_puream));
-//         //molecule_->set_basis_all_atoms(basisname, "DUAL_BASIS_SCF");
-//         //dual_basis = BasisSet::construct(parser, molecule_, "DUAL_BASIS_SCF");
-//         dual_basis = BasisSet::pyconstruct_orbital(molecule_,
-//         "DUAL_BASIS_SCF", basisname, old_forced_puream);
-//     } else {
-//         dual_basis = BasisSet::pyconstruct_orbital(molecule_,
-//         "BASIS", options_.get_str("BASIS"));
-//         // TODO: oh my, forced_puream!
-//         // TODO: oh my, a basis for which a fn hasn't been set in the input translation
-//         // TODO: oh my, a non-fitting basis to be looked up (in Mol) not under BASIS
-//         //std::shared_ptr<BasisSet> dual_basis = BasisSet::pyconstruct(molecule_, basisname,
-//         //            "DUAL_BASIS_SCF");
-//         // TODO: I think Rob was planning to rework this projection bit anyways
-//         // 2 Apr 2015: I (LAB) was hoping to avoid detangling this, but the need to
-//         //  optimize w/custom basis sets has arrived before the new scf code, hence this hack
-//     }
-
-//     psio_->read_entry(PSIF_SCF_MOS,"SCF ENERGY",(char *) &(E_),sizeof(double));
-
-//     int old_nirrep, old_nsopi[8];
-//     psio_->read_entry(PSIF_SCF_MOS,"NIRREP",(char *) &(old_nirrep),sizeof(int));
-
-//     if (old_nirrep != nirrep_)
-//         throw PSIEXCEPTION("SCF::load_orbitals: Projection of orbitals between different symmetries is not currently supported");
-
-//     psio_->read_entry(PSIF_SCF_MOS,"NSOPI",(char *) (old_nsopi),nirrep_*sizeof(int));
-
-//     // Save current alpha and beta occupation vectors
-//     Dimension nalphapi_current (nirrep_, "Current number of alpha electrons per irrep");
-//     Dimension nbetapi_current (nirrep_, "Current number of beta electrons per irrep");
-//     nalphapi_current = nalphapi_;
-//     nbetapi_current = nbetapi_;
-
-//     // Read in guess alpha and beta occupation vectors
-//     psio_->read_entry(PSIF_SCF_MOS,"NALPHAPI",(char *) &(nalphapi_[0]),nirrep_*sizeof(int));
-//     psio_->read_entry(PSIF_SCF_MOS,"NBETAPI",(char *) &(nbetapi_[0]),nirrep_*sizeof(int));
-
-//     // Check if guess is the broken symmetry solution
-//     int nalpha_guess = 0;
-//     int nbeta_guess = 0;
-//     for (int h = 0; h < nirrep_; h++) {
-//         nalpha_guess += nalphapi_[h];
-//         nbeta_guess += nbetapi_[h];
-//     }
-
-//     bool guess_broken_symmetry = false;
-//     if (nalpha_guess == nbeta_guess && multiplicity_ == 3) guess_broken_symmetry = true;
-
-//     if (!broken_symmetry_) {
-//         if (!guess_broken_symmetry) {
-//             outfile->Printf( "  Recomputing DOCC and SOCC from number of alpha and beta electrons from previous calculation.\n");
-//             for (int h = 0; h < nirrep_; h++) {
-//                 doccpi_[h] = std::min(nalphapi_[h] , nbetapi_[h]);
-//                 soccpi_[h] = std::abs(nalphapi_[h] - nbetapi_[h]);
-//             }
-//             print_occupation();
-
-//             SharedMatrix Ctemp_a(new Matrix("ALPHA MOS", nirrep_, old_nsopi, nalphapi_));
-//             Ctemp_a->load(psio_, PSIF_SCF_MOS, Matrix::SubBlocks);
-//             SharedMatrix Ca;
-//             if (basisname != options_.get_str("BASIS")) {
-//                 Ca = basis_projection(Ctemp_a, nalphapi_, dual_basis, basisset_);
-//             } else {
-//                 Ca = Ctemp_a;
-//             }
-//             for (int h = 0; h < nirrep_; h++)
-//                 for (int m = 0; m<nsopi_[h]; m++)
-//                     for (int i = 0; i<nalphapi_[h]; i++)
-//                         Ca_->set(h,m,i,Ca->get(h,m,i));
-
-//             SharedMatrix Ctemp_b(new Matrix("BETA MOS", nirrep_, old_nsopi, nbetapi_));
-//             Ctemp_b->load(psio_, PSIF_SCF_MOS, Matrix::SubBlocks);
-//             SharedMatrix Cb;
-//             if (basisname != options_.get_str("BASIS")) {
-//                 Cb = basis_projection(Ctemp_b, nbetapi_, dual_basis, basisset_);
-//             } else {
-//                 Cb = Ctemp_b;
-//             }
-//             for (int h = 0; h < nirrep_; h++)
-//                 for (int m = 0; m<nsopi_[h]; m++)
-//                     for (int i = 0; i<nbetapi_[h]; i++)
-//                         Cb_->set(h,m,i,Cb->get(h,m,i));
-//         }
-//         // If it's a triplet and there is a broken symmetry singlet guess - ignore the guess
-//         else{
-//             // Restore nalphapi and nbetapi requested by the user
-//             nalphapi_ = nalphapi_current;
-//             nbetapi_ = nbetapi_current;
-//         }
-//     }
-//     // if it's a broken symmetry solution
-//     else {
-
-//         SharedMatrix Ctemp_a(new Matrix("ALPHA MOS", nirrep_, old_nsopi, nalphapi_));
-//         Ctemp_a->load(psio_, PSIF_SCF_MOS, Matrix::SubBlocks);
-//         SharedMatrix Ca;
-//         if (basisname != options_.get_str("BASIS")) {
-//             Ca = basis_projection(Ctemp_a, nalphapi_, dual_basis, basisset_);
-//         } else {
-//             Ca = Ctemp_a;
-//         }
-
-//         SharedMatrix Ctemp_b(new Matrix("BETA MOS", nirrep_, old_nsopi, nbetapi_));
-//         Ctemp_b->load(psio_, PSIF_SCF_MOS, Matrix::SubBlocks);
-//         SharedMatrix Cb;
-//         if (basisname != options_.get_str("BASIS")) {
-//             Cb = basis_projection(Ctemp_b, nbetapi_, dual_basis, basisset_);
-//         } else {
-//             Cb = Ctemp_b;
-//         }
-
-//         // Restore nalphapi and nbetapi requested by the user
-//         nalphapi_ = nalphapi_current;
-//         nbetapi_ = nbetapi_current;
-
-//         int socc_count = 0;
-//         for (int h = 0; h < nirrep_; h++) {
-//             // Copy doubly occupied orbitals into the orbital space for alpha and beta
-//             for (int i = 0; i<doccpi_[h]; i++) {
-//                 for (int m = 0; m<nsopi_[h]; m++) {
-//                     Ca_->set(h,m,i,Ca->get(h,m,i));
-//                     Cb_->set(h,m,i,Cb->get(h,m,i));
-//                 }
-//             }
-//             // Copy singly occupied orbitals into the appropriate alpha and beta orbital spaces
-//             for (int i = doccpi_[h]; i<(doccpi_[h]+soccpi_[h]); i++) {
-//                 socc_count++;
-//                 if (socc_count == 1) {
-//                     for (int m = 0; m<nsopi_[h]; m++) {
-//                         Ca_->set(h,m,doccpi_[h],Ca->get(h,m,i));
-//                     }
-//                 }
-//                 if (socc_count == 2) {
-//                     for (int m = 0; m<nsopi_[h]; m++) {
-//                         Cb_->set(h,m,doccpi_[h],Ca->get(h,m,i));
-//                     }
-//                 }
-//             }
-//         }
-//     }
-//     psio_->close(PSIF_SCF_MOS,1);
-//     delete[] basisnamec;
-// }
+void HF::format_guess()
+{
+    // Nothing to do, only for special cases
+}
 
 
 void HF::check_phases()
@@ -1803,6 +1555,7 @@ void HF::initialize()
         form_H(); //Core Hamiltonian
         timer_off("HF: Form H");
 
+#ifdef USING_libefp
         // EFP: Add in permanent moment contribution and cache
         if ( Process::environment.get_efp()->get_frag_count() > 0 ) {
             std::shared_ptr<Matrix> Vefp = Process::environment.get_efp()->modify_Fock_permanent();
@@ -1811,6 +1564,7 @@ void HF::initialize()
             Horig_->copy(H_);
             outfile->Printf( "  QM/EFP: iterating Total Energy including QM/EFP Induction\n");
         }
+#endif
 
         timer_on("HF: Form S/X");
         form_Shalf(); //S and X Matrix
@@ -1826,10 +1580,11 @@ void HF::initialize()
         E_ = compute_initial_E();
     }
 
+#ifdef USING_libefp
     if ( Process::environment.get_efp()->get_frag_count() > 0 ) {
         Process::environment.get_efp()->set_qm_atoms();
     }
-
+#endif
 }
 
 void HF::iterations()
@@ -1854,13 +1609,14 @@ void HF::iterations()
         // Call any preiteration callbacks
 //        call_preiteration_callbacks();
 
-
+#ifdef USING_libefp
         // add efp contribution to Fock matrix
         if ( Process::environment.get_efp()->get_frag_count() > 0 ) {
             H_->copy(Horig_);
             std::shared_ptr<Matrix> Vefp = Process::environment.get_efp()->modify_Fock_induced();
             H_->add(Vefp);
         }
+#endif
 
         E_ = 0.0;
 
@@ -1884,11 +1640,13 @@ void HF::iterations()
 
         E_ += compute_E();
 
+#ifdef USING_libefp
         // add efp contribution to energy
         if ( Process::environment.get_efp()->get_frag_count() > 0 ) {
             double efp_wfn_dependent_energy = Process::environment.get_efp()->scf_energy_update();
             E_ += efp_wfn_dependent_energy;
         }
+#endif
 
 #ifdef USING_PCMSolver
         // The PCM potential must be added to the Fock operator *after* the
@@ -2091,10 +1849,13 @@ void HF::print_energies()
         Process::environment.globals["DISPERSION CORRECTION ENERGY"] = energies_["-D"];
     }
 
+    Process::environment.globals["SCF ITERATIONS"] = iteration_;
+
     // Only print this alert if we are actually doing EFP or PCM
     if(pcm_enabled_ || ( Process::environment.get_efp()->get_frag_count() > 0 ) ) {
         outfile->Printf("    Alert: EFP and PCM quantities not currently incorporated into SCF psivars.");
     }
+
 //  Comment so that autodoc utility will find this PSI variable
 //     It doesn't really belong here but needs to be linked somewhere
 //  Process::environment.globals["DOUBLE-HYBRID CORRECTION ENERGY"]
@@ -2180,8 +1941,8 @@ void HF::reset_occupation()
 }
 SharedMatrix HF::form_Fia(SharedMatrix Fso, SharedMatrix Cso, int* noccpi)
 {
-    int* nsopi = Cso->rowspi();
-    int* nmopi = Cso->colspi();
+    const int* nsopi = Cso->rowspi();
+    const int* nmopi = Cso->colspi();
     int* nvirpi = new int[nirrep_];
 
     for (int h = 0; h < nirrep_; h++)
@@ -2190,8 +1951,8 @@ SharedMatrix HF::form_Fia(SharedMatrix Fso, SharedMatrix Cso, int* noccpi)
     SharedMatrix Fia(new Matrix("Fia (Some Basis)", nirrep_, noccpi, nvirpi));
 
     // Hack to get orbital e for this Fock
-    SharedMatrix C2(new Matrix("C2", nirrep_, nsopi, nmopi));
-    std::shared_ptr<Vector> E2(new Vector("E2", nirrep_, nmopi));
+    SharedMatrix C2(new Matrix("C2", Cso->rowspi(), Cso->colspi()));
+    std::shared_ptr<Vector> E2(new Vector("E2", Cso->colspi()));
     diagonalize_F(Fso, C2, E2);
 
     for (int h = 0; h < nirrep_; h++) {

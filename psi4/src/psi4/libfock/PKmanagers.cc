@@ -165,7 +165,7 @@ primary_(primary), memory_(memory), options_(options) {
     // Get number of threads
     nthreads_ = 1;
 #ifdef _OPENMP
-    nthreads_ = omp_get_max_threads();
+    nthreads_ = Process::environment.get_n_threads();
 #endif
 }
 
@@ -370,6 +370,7 @@ void PKManager::form_D_vec(std::vector<SharedMatrix> D, std::vector<SharedMatrix
 
     D_ = D;
     all_sym_ = true;
+    symmetric_.clear();
     // Check which density matrices are asymmetric, if any
     for(int N = 0; N < D.size(); ++N) {
         symmetric_.push_back(Cl[N] == Cr[N]);

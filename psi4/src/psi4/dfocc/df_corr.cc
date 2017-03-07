@@ -3,7 +3,7 @@
  *
  * Psi4: an open-source quantum chemistry software package
  *
- * Copyright (c) 2007-2016 The Psi4 Developers.
+ * Copyright (c) 2007-2017 The Psi4 Developers.
  *
  * The copyrights for code used from other parties are included in
  * the corresponding files.
@@ -149,7 +149,7 @@ void DFOCC::formJ(std::shared_ptr<BasisSet> auxiliary_, std::shared_ptr<BasisSet
 
     int nthreads = 1;
     #ifdef _OPENMP
-        nthreads = omp_get_max_threads();
+        nthreads = Process::environment.get_n_threads();
     #endif
 
     double **J = block_matrix(nQ, nQ);
@@ -277,7 +277,7 @@ void DFOCC::b_so(std::shared_ptr<BasisSet> primary_, std::shared_ptr<BasisSet> a
 
     int nthreads = 1;
     #ifdef _OPENMP
-        nthreads = omp_get_max_threads();
+        nthreads = Process::environment.get_n_threads();
     #endif
 
     std::shared_ptr<ERISieve> sieve_ = std::shared_ptr<ERISieve>(new ERISieve(primary_, cutoff));

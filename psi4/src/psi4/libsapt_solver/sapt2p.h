@@ -3,7 +3,7 @@
  *
  * Psi4: an open-source quantum chemistry software package
  *
- * Copyright (c) 2007-2016 The Psi4 Developers.
+ * Copyright (c) 2007-2017 The Psi4 Developers.
  *
  * The copyrights for code used from other parties are included in
  * the corresponding files.
@@ -171,7 +171,7 @@ private:
     int max_diis_vecs_;
 
     int diis_file_;
-    int vec_length_;
+    size_t vec_length_;
 
     int curr_vec_;
     int num_vecs_;
@@ -183,7 +183,7 @@ protected:
     std::shared_ptr<PSIO> psio_;
 
 public:
-    SAPTDIIS(int, const char *, const char *, int, int, std::shared_ptr<PSIO>);
+    SAPTDIIS(int, const char *, const char *, size_t, int, std::shared_ptr<PSIO>);
     ~SAPTDIIS();
 
     void store_vectors();

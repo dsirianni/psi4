@@ -3,7 +3,7 @@
 #
 # Psi4: an open-source quantum chemistry software package
 #
-# Copyright (c) 2007-2016 The Psi4 Developers.
+# Copyright (c) 2007-2017 The Psi4 Developers.
 #
 # The copyrights for code used from other parties are included in
 # the corresponding files.
@@ -44,6 +44,8 @@ from psi4.driver import pubchem
 from psi4.driver.p4util.exceptions import *
 from psi4 import core
 
+# globally available regex strings
+pubchemre = re.compile(r'^(\s*pubchem\s*:\s*(.*)\n)$', re.MULTILINE | re.IGNORECASE)
 
 # inputfile contents to be preserved from the processor
 literals = {}
@@ -230,7 +232,6 @@ def process_molecule_command(matchobj):
     spaces = matchobj.group(1)
     name = matchobj.group(2)
     geometry = matchobj.group(3)
-    pubchemre = re.compile(r'^(\s*pubchem\s*:\s*(.*)\n)$', re.MULTILINE | re.IGNORECASE)
     geometry = pubchemre.sub(process_pubchem_command, geometry)
     from_filere = re.compile(r'^(\s*from_file\s*:\s*(.*)\n)$', re.MULTILINE | re.IGNORECASE)
     geometry = from_filere.sub(process_from_file_command,geometry)
@@ -389,8 +390,6 @@ def process_pcm_command(matchobj):
     fp = open('pcmsolver.inp', 'w')
     fp.write(block)
     fp.close()
-    import pcm_placeholder
-    sys.path.append(pcm_placeholder.PCMSolver_PARSE_DIR)
     import pcmsolver
     pcmsolver.parse_pcm_input('pcmsolver.inp')
     return "" # The file has been written to disk; nothing needed in Psi4 input
@@ -770,7 +769,7 @@ def process_input(raw_input, print_level=1):
     imports += 'from psi4.driver.driver_cbs import xtpl_highest_1, scf_xtpl_helgaker_2, scf_xtpl_helgaker_3, corl_xtpl_helgaker_2\n'
     imports += 'from psi4.driver.wrapper_database import database, db, DB_RGT, DB_RXN\n'
     imports += 'from psi4.driver.wrapper_autofrag import auto_fragments\n'
-    imports += 'from psi4.driver.p4const.physconst import *\n'
+    imports += 'from psi4.driver.constants.physconst import *\n'
     imports += 'psi4_io = core.IOManager.shared_object()\n'
 
     # psirc (a baby PSIthon script that might live in ~/.psi4rc)
@@ -798,6 +797,12 @@ def process_input(raw_input, print_level=1):
     # Move up the psi4.core namespace
     for func in dir(core):
         temp = temp.replace("psi4." + func, "psi4.core." + func)
+
+    # Move pseudonamespace for physconst into proper namespace
+    from psi4.driver.p4util import constants
+    for pc in dir(constants.physconst):
+        if not pc.startswith('__'):
+            temp = temp.replace('psi_' + pc, 'psi4.constants.' + pc)
 
     return temp
 

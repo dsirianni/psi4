@@ -3,7 +3,7 @@
  *
  * Psi4: an open-source quantum chemistry software package
  *
- * Copyright (c) 2007-2016 The Psi4 Developers.
+ * Copyright (c) 2007-2017 The Psi4 Developers.
  *
  * The copyrights for code used from other parties are included in
  * the corresponding files.
@@ -70,6 +70,9 @@ void PSIO::change_file_namespace(unsigned int unit, const std::string & ns1, con
 
     PSIOManager::shared_object()->move_file(std::string(old_fullpath), std::string(new_fullpath));
         ::rename(old_fullpath,new_fullpath);
+
+    free(old_fullpath);
+    free(new_fullpath);
 }
 
 }

@@ -1,16 +1,16 @@
 language: cpp
 sudo: false
 matrix:
-  allow_failures:
-    - compiler: clang
-      env:
-        - CXX_COMPILER='clang++-3.9'
-        - PYTHON_VER='3.5'
-        - C_COMPILER='clang-3.9'
-        - Fortran_COMPILER='gfortran'
-        - BUILD_TYPE='release'
-        - NAME='clang'
-        - VERSION='3.9'
+  #allow_failures:
+  #  - compiler: clang
+  #    env:
+  #      - CXX_COMPILER='clang++-3.9'
+  #      - PYTHON_VER='3.5'
+  #      - C_COMPILER='clang-3.9'
+  #      - Fortran_COMPILER='gfortran'
+  #      - BUILD_TYPE='release'
+  #      - NAME='clang'
+  #      - VERSION='3.9'
 
   include:
 
@@ -36,27 +36,27 @@ matrix:
       - NAME='clang'
       - VERSION='3.6'
 
-  - os: linux
-    compiler: clang
-    addons: &2
-      apt:
-        sources:
-        - llvm-toolchain-precise-3.9
-        - ubuntu-toolchain-r-test
-        - george-edison55-precise-backports
-        packages:
-        - liblapack-dev
-        - clang-3.9
-        - libhdf5-serial-dev
-        - gfortran
-    env:
-      - CXX_COMPILER='clang++-3.9'
-      - PYTHON_VER='3.5'
-      - C_COMPILER='clang-3.9'
-      - Fortran_COMPILER='gfortran'
-      - BUILD_TYPE='release'
-      - NAME='clang'
-      - VERSION='3.9'
+  #- os: linux
+  #  compiler: clang
+  #  addons: &2
+  #    apt:
+  #      sources:
+  #      - llvm-toolchain-precise-3.9
+  #      - ubuntu-toolchain-r-test
+  #      - george-edison55-precise-backports
+  #      packages:
+  #      - liblapack-dev
+  #      - clang-3.9
+  #      - libhdf5-serial-dev
+  #      - gfortran
+  #  env:
+  #    - CXX_COMPILER='clang++-3.9'
+  #    - PYTHON_VER='3.5'
+  #    - C_COMPILER='clang-3.9'
+  #    - Fortran_COMPILER='gfortran'
+  #    - BUILD_TYPE='release'
+  #    - NAME='clang'
+  #    - VERSION='3.9'
 
   - os: linux
     compiler: gcc
@@ -172,9 +172,17 @@ before_script:
     -DCMAKE_PREFIX_PATH=${HOME}/miniconda/envs/p4env
     -DPYTHON_EXECUTABLE="${HOME}/miniconda/envs/p4env/bin/python"
     -DENABLE_gdma=ON
+    -DENABLE_PLUGIN_TESTING=ON
     -DCMAKE_INSTALL_PREFIX=${TRAVIS_BUILD_DIR}/Install
 - cd build
 - ../.scripts/travis_build.sh
 script:
 - python ../.scripts/travis_run_test.py
 - python ../.scripts/travis_print_failing.py
+
+# safelist
+branches:
+  only:
+  - master
+  - 1.0.x
+  - libxc

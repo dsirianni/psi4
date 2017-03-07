@@ -3,7 +3,7 @@
  *
  * Psi4: an open-source quantum chemistry software package
  *
- * Copyright (c) 2007-2016 The Psi4 Developers.
+ * Copyright (c) 2007-2017 The Psi4 Developers.
  *
  * The copyrights for code used from other parties are included in
  * the corresponding files.
@@ -86,6 +86,11 @@ PCMInput pcmsolver_input()
   return host_input;
 }
 
+void host_writer(const char * message)
+{
+  outfile->Printf(message);
+  outfile->Printf("\n");
+}
 
 PCM::PCM(Options &options, std::shared_ptr<PSIO> /* psio */, int nirrep, std::shared_ptr<BasisSet> basisset)
 {
@@ -125,10 +130,10 @@ PCM::PCM(Options &options, std::shared_ptr<PSIO> /* psio */, int nirrep, std::sh
   if (PSI4_provides_input) {
     host_input = pcmsolver_input();
     context_ = pcmsolver_new(PCMSOLVER_READER_HOST, molecule->natom(), charges, coordinates,
-                             symmetry_info, &host_input);
+                             symmetry_info, &host_input, host_writer);
   } else {
     context_ = pcmsolver_new(PCMSOLVER_READER_OWN, molecule->natom(), charges, coordinates,
-                             symmetry_info, &host_input);
+                             symmetry_info, &host_input, host_writer);
   }
   pcmsolver_print(context_);
   ntess_ = pcmsolver_get_cavity_size(context_);

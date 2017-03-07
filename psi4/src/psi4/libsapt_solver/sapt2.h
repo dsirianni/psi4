@@ -3,7 +3,7 @@
  *
  * Psi4: an open-source quantum chemistry software package
  *
- * Copyright (c) 2007-2016 The Psi4 Developers.
+ * Copyright (c) 2007-2017 The Psi4 Developers.
  *
  * The copyrights for code used from other parties are included in
  * the corresponding files.
@@ -38,8 +38,8 @@ private:
   virtual void print_results();
 
 protected:
-  int no_nvirA_;
-  int no_nvirB_;
+  size_t no_nvirA_;
+  size_t no_nvirB_;
 
   double *no_evalsA_;
   double *no_evalsB_;
@@ -47,6 +47,8 @@ protected:
   double **no_CA_;
   double **no_CB_;
 
+// These ints should not overflow below 46000 basis functions
+// They contain indices up to nso_ * (nso_ + 1) / 2
   int *ioff_;
   int *index2i_;
   int *index2j_;

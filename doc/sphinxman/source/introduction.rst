@@ -3,7 +3,7 @@
 .. #
 .. # Psi4: an open-source quantum chemistry software package
 .. #
-.. # Copyright (c) 2007-2016 The Psi4 Developers.
+.. # Copyright (c) 2007-2017 The Psi4 Developers.
 .. #
 .. # The copyrights for code used from other parties are included in
 .. # the corresponding files.
@@ -498,15 +498,18 @@ Implementation within Psi4
 Supported Architectures
 =======================
 
-The majority of |PSIfour| was developed on Mac and Linux machines. In
-principle, it should work on any Unix system; however, we have not tested
-extensively on systems other than Mac and Linux. There is not a Windows
-version of |PSIfour|.
+The majority of |PSIfour| was developed on Mac and Linux machines; in
+principle, it should work on any Unix system. The latest version of the
+|PSIfour| program package may be obtained at `psicode.org
+<http://psicode.org>`_. The package is available as a binary for Linux,
+macOS, or Windows Subsystem for Linux (:ref:`Installing from Binary
+<sec:conda>`) or as source code (zipped archive or git repository from
+`https://github.com/psi4/psi4 <http://www.github.com/psi4/psi4>`_).
 
 |PSIfour| has been successfully compiled using Intel, GCC, and Clang
-compilers. For the Intel compilers, we recommend at least 12.1 (we have
-had trouble with version 12.0 and 13.0.1). GCC version 4.6 or above is
-recommended. For some architectures, a :ref:`precompiled binary
+compilers. :ref:`Compiler requirements <faq:approvedcxx>` are primarily
+C++11 compliance (*i.e.*, GCC version 4.9 or above).
+For some architectures, a :ref:`precompiled binary
 <sec:conda>` is available. See :ref:`Compiling and Installing
 <sec:installFile>` for details.
 
@@ -534,9 +537,9 @@ For more details, see Tables :ref:`Energy <table:energy_gen>`,
     +                         +----------------+-------------------+--------------+----------------+                             +-----------+------------+
     |                         | Reference      | Type              | Reference    | Type           |                             | OO [#f9]_ | FNO [#f1]_ |
     +=========================+================+===================+==============+================+=============================+===========+============+
-    | HF                      | RHF/UHF/ROHF   | CONV/DF/CD        | RHF/UHF/ROHF | CONV/DF        | threaded                    |           |            |
+    | HF, HF-3c               | RHF/UHF/ROHF   | CONV/DF/CD        | RHF/UHF/ROHF | CONV/DF        | threaded                    |           |            |
     +-------------------------+----------------+-------------------+--------------+----------------+-----------------------------+-----------+------------+
-    | DFT                     | RKS/UKS        | CONV/DF/CD [#f7]_ | RKS/UKS      | DF [#f4]_      | threaded                    |           |            |
+    | DFT, PBEh-3c            | RKS/UKS        | CONV/DF/CD [#f7]_ | RKS/UKS      | DF [#f4]_      | threaded                    |           |            |
     +-------------------------+----------------+-------------------+--------------+----------------+-----------------------------+-----------+------------+
     | EFP [#f5]_              | RHF            |                   | ---          | ---            |                             |           |            |
     +-------------------------+----------------+-------------------+--------------+----------------+-----------------------------+-----------+------------+
@@ -566,7 +569,7 @@ For more details, see Tables :ref:`Energy <table:energy_gen>`,
     +-------------------------+----------------+-------------------+--------------+----------------+-----------------------------+-----------+------------+
     | CCSD [#f10]_            | RHF/UHF/ROHF   | CONV/DF/CD [#f8]_ | RHF/UHF/ROHF | CONV/DF [#f8]_ | threaded [#f3]_             |           | E [#f2]_   |
     +-------------------------+----------------+-------------------+--------------+----------------+-----------------------------+-----------+------------+
-    | CCSD(T) [#f10]_         | RHF/UHF/ROHF   | CONV/DF/CD [#f8]_ | UHF          | CONV           | threaded (pthreads) [#f3]_  |           | E [#f2]_   |
+    | CCSD(T) [#f10]_         | RHF/UHF/ROHF   | CONV/DF/CD [#f8]_ | RHF/UHF      | CONV           | threaded (pthreads) [#f3]_  |           | E [#f2]_   |
     +-------------------------+----------------+-------------------+--------------+----------------+-----------------------------+-----------+------------+
     | CCSD(AT) [#f10]_        | RHF            | CONV/DF/CD        | ---          | ---            | threaded [#f3]_             |           |            |
     +-------------------------+----------------+-------------------+--------------+----------------+-----------------------------+-----------+------------+
@@ -649,7 +652,7 @@ Where-to-post summary:[#f6]_
 
 * When will you? -- `ask the forum <http://forum.psicode.org>`_
 
-* I have an experience that can improve the build documentation -- `inform the forum <http://forum.psicode.org>`_ or `post on the wiki itself <https://github.com/psi4/psi4/wiki>`_
+* I have an experience that can improve the build documentation -- `inform the forum <http://forum.psicode.org>`_ or :source:`add to the documentation itself <doc/sphinxman/source>`
 
 * Anything you want to share privately -- `crawdad@vt.edu <mailto:crawdad@vt.edu>`_ or `sherrill@gatech.edu <mailto:sherrill@gatech.edu>`_
 
@@ -663,7 +666,7 @@ Where-to-post summary:[#f6]_
 .. [#f5] Both EFP/EFP and QM/EFP energies are available.
 .. [#f6] Adapted from `here <https://groups.google.com/forum/#!topic/google-collections-users/m8FnCcmtC88>`_.
 .. [#f7] DH-DFT only available with DF-MP2.
-.. [#f8] Not all combinations of reference and algorithm available. In particular, non-RHF references only available as CONV.
+.. [#f8] Not all combinations of reference and algorithm available. In particular, non-RHF references only available as CONV. For CCSD(T), gradients are not available with frozen core.
 .. [#f9] Orbital-optimized variant available. In particular, all references available as CONV/DF.
 .. [#f10] Capabilities breakdown in great detail can be found :ref:`here <table:managedmethods>`.
 

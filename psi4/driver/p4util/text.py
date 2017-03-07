@@ -3,7 +3,7 @@
 #
 # Psi4: an open-source quantum chemistry software package
 #
-# Copyright (c) 2007-2016 The Psi4 Developers.
+# Copyright (c) 2007-2017 The Psi4 Developers.
 #
 # The copyrights for code used from other parties are included in
 # the corresponding files.
@@ -33,7 +33,7 @@ to data tables and text.
 import sys
 import re
 from psi4 import core
-from psi4.driver import p4const
+from psi4.driver import constants
 from .exceptions import *
 
 class Table(object):
@@ -119,7 +119,7 @@ class Table(object):
         import copy
         return copy.deepcopy(self)
 
-    def absolute_to_relative(self, Factor=p4const.psi_hartree2kcalmol):
+    def absolute_to_relative(self, Factor=constants.hartree2kcalmol):
         """Function to shift the data of each column of the Table object
         such that the lowest value is zero. A scaling factor of *Factor* is applied.
 
@@ -140,7 +140,7 @@ class Table(object):
                 #print datarow[1][col]
                 datarow[1][col] = (datarow[1][col] - current_min[col]) * Factor
 
-    def scale(self, Factor=p4const.psi_hartree2kcalmol):
+    def scale(self, Factor=constants.hartree2kcalmol):
         """Function to apply a scaling factor *Factor* to the
         data of the Table object.
 

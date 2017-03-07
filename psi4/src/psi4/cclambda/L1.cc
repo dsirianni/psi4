@@ -3,7 +3,7 @@
  *
  * Psi4: an open-source quantum chemistry software package
  *
- * Copyright (c) 2007-2016 The Psi4 Developers.
+ * Copyright (c) 2007-2017 The Psi4 Developers.
  *
  * The copyrights for code used from other parties are included in
  * the corresponding files.
@@ -86,8 +86,8 @@ namespace psi { namespace cclambda {
 	  global_dpd_->file2_copy(&FME, PSIF_CC_LAMBDA, "New LIA");
 	  global_dpd_->file2_close(&Fme);
 	  global_dpd_->file2_close(&FME);
-	  /* If CCSD(T) gradient, add T3 contributions */
-	  if(params.wfn == "CCSD_T") {
+	// Add T3 contribution to CCSD(T) lambda equations  
+	if(params.wfn == "CCSD_T") {
 	    global_dpd_->file2_init(&FME,PSIF_CC_OEI, 0, 0, 1, "SIA");
 	    global_dpd_->file2_init(&LIA, PSIF_CC_LAMBDA, L_irr, 0, 1, "New LIA");
 	    global_dpd_->file2_axpy(&FME, &LIA, 1, 0);
@@ -637,6 +637,14 @@ namespace psi { namespace cclambda {
 
       /* newLia * Dia */
       if(params.ref == 0) { /** RHF **/
+
+        if(params.wfn == "CCSD_T") {
+            global_dpd_->file2_init(&FME, PSIF_CC_OEI, 0, 0, 1, "SIA(T)");
+            global_dpd_->file2_init(&newLIA, PSIF_CC_LAMBDA, L_irr, 0, 1, "New LIA");
+            global_dpd_->file2_axpy(&FME, &newLIA, 1, 0);
+            global_dpd_->file2_close(&newLIA);
+            global_dpd_->file2_close(&FME);
+          }
 
 	global_dpd_->file2_init(&newLIA, PSIF_CC_LAMBDA, L_irr, 0, 1, "New LIA");
 	global_dpd_->file2_copy(&newLIA, PSIF_CC_LAMBDA, "New LIA Increment");

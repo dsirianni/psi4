@@ -3,7 +3,7 @@
  *
  * Psi4: an open-source quantum chemistry software package
  *
- * Copyright (c) 2007-2016 The Psi4 Developers.
+ * Copyright (c) 2007-2017 The Psi4 Developers.
  *
  * The copyrights for code used from other parties are included in
  * the corresponding files.
@@ -154,8 +154,8 @@ void py_psi_plugin_close_all()
 void export_plugins(py::module &m)
 {
     // plugins
-    m.def("plugin_load", py_psi_plugin_load, "docstring");
-    m.def("plugin", py_psi_plugin, "docstring");
-    m.def("plugin_close", py_psi_plugin_close, "docstring");
-    m.def("plugin_close_all", py_psi_plugin_close_all, "docstring");
+    m.def("plugin_load", py_psi_plugin_load, "Load the plugin of name arg0. Returns 0 if not loaded, 1 if loaded, 2 if already loaded");
+    m.def("plugin", py_psi_plugin, "Call the plugin of name arg0. Returns the plugin code result.");
+    m.def("plugin_close", py_psi_plugin_close, "Close the plugin of name arg0.");
+    m.def("plugin_close_all", py_psi_plugin_close_all, "Close all open plugins.");
 }

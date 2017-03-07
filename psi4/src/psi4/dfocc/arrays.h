@@ -3,7 +3,7 @@
  *
  * Psi4: an open-source quantum chemistry software package
  *
- * Copyright (c) 2007-2016 The Psi4 Developers.
+ * Copyright (c) 2007-2017 The Psi4 Developers.
  *
  * The copyrights for code used from other parties are included in
  * the corresponding files.
@@ -27,12 +27,6 @@
 
 #ifndef _dfocc_arrays_h_
 #define _dfocc_arrays_h_
-
-#include "psi4/libciomr/libciomr.h"
-#include "psi4/libiwl/iwl.h"
-
-#include "psi4/libpsio/psio.hpp"
-
 
 using namespace psi;
 using namespace std;

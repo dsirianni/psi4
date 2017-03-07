@@ -3,7 +3,7 @@
  *
  * Psi4: an open-source quantum chemistry software package
  *
- * Copyright (c) 2007-2016 The Psi4 Developers.
+ * Copyright (c) 2007-2017 The Psi4 Developers.
  *
  * The copyrights for code used from other parties are included in
  * the corresponding files.
@@ -31,6 +31,7 @@
 #include "psi4/libfock/soscf.h"
 #include "psi4/lib3index/denominator.h"
 #include "psi4/lib3index/dftensor.h"
+#include "psi4/lib3index/3index.h"
 #include "psi4/libmints/molecule.h"
 #include "psi4/libmints/matrix.h"
 #include "psi4/libmints/vector.h"
@@ -65,8 +66,6 @@ void export_fock(py::module& m)
            .def("C_right_add", [](JK &jk, SharedMatrix Cr){
                 jk.C_right().push_back(Cr);
            })
-           // .def("C_left", &JK::C_left, py::return_value_policy::reference_internal)
-           // .def("C_right", &JK::C_right, py::return_value_policy::reference_internal)
            .def("J", &JK::J, py::return_value_policy::reference_internal)
            .def("K", &JK::K, py::return_value_policy::reference_internal)
            .def("wK", &JK::wK, py::return_value_policy::reference_internal)
@@ -89,9 +88,38 @@ void export_fock(py::module& m)
             .def("Imo", &DFTensor::Imo, "doctsring")
             .def("Idfmo", &DFTensor::Idfmo, "doctsring");
 
+    py::class_<DFChargeFitter, std::shared_ptr<DFChargeFitter>>(m, "DFChargeFitter", "docstring").
+            def("setPrimary", &DFChargeFitter::setPrimary, "docstring").
+            def("setAuxiliary", &DFChargeFitter::setAuxiliary, "docstring").
+            def("setD", &DFChargeFitter::setD, "docstring").
+            def("d", &DFChargeFitter::d, "docstring").
+            def("fit", &DFChargeFitter::fit, "docstring");
+
+    py::class_<FittingMetric, std::shared_ptr<FittingMetric> >(m, "FittingMetric", "docstring").
+            def(py::init<std::shared_ptr<BasisSet>, bool>()).
+            def("get_algorithm", &FittingMetric::get_algorithm, "docstring").
+            def("is_poisson", &FittingMetric::is_poisson, "docstring").
+            def("is_inverted", &FittingMetric::is_inverted, "docstring").
+            def("get_metric", &FittingMetric::get_metric, "docstring").
+            def("get_pivots", &FittingMetric::get_pivots, "docstring").
+            def("get_reverse_pivots", &FittingMetric::get_reverse_pivots, "docstring").
+            def("form_fitting_metric", &FittingMetric::form_fitting_metric, "docstring").
+            def("form_cholesky_inverse", &FittingMetric::form_cholesky_inverse, "docstring").
+            def("form_QR_inverse", &FittingMetric::form_QR_inverse, "docstring").
+            def("form_eig_inverse", &FittingMetric::form_eig_inverse, "docstring").
+            def("form_full_inverse", &FittingMetric::form_full_inverse, "docstring");
+
+    py::class_<PseudoTrial, std::shared_ptr<PseudoTrial> >(m, "PseudoTrial", "docstring").
+            def("getI", &PseudoTrial::getI, "docstring").
+            def("getIPS", &PseudoTrial::getIPS, "docstring").
+            def("getQ", &PseudoTrial::getQ, "docstring").
+            def("getR", &PseudoTrial::getR, "docstring").
+            def("getA", &PseudoTrial::getA, "docstring");
+
     py::class_<SOMCSCF, std::shared_ptr<SOMCSCF>>(m, "SOMCSCF", "docstring")
             // .def(init<std::shared_ptr<JK>, SharedMatrix, SharedMatrix >())
             .def("Ck", &SOMCSCF::Ck)
+            .def("form_rotation_matrix", &SOMCSCF::form_rotation_matrix, py::arg("x"), py::arg("order") = 2)
             .def("rhf_energy", &SOMCSCF::rhf_energy)
             .def("update", &SOMCSCF::update)
             .def("approx_solve", &SOMCSCF::approx_solve)

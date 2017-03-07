@@ -3,7 +3,7 @@
  *
  * Psi4: an open-source quantum chemistry software package
  *
- * Copyright (c) 2007-2016 The Psi4 Developers.
+ * Copyright (c) 2007-2017 The Psi4 Developers.
  *
  * The copyrights for code used from other parties are included in
  * the corresponding files.
@@ -140,14 +140,6 @@ int CharacterTable::make_table()
     SymmetryOperation so;
 
     _inv = new int[nirrep_];
-
-    // this array forms a reducible representation for rotations about x,y,z
-    double *rot = new double[nirrep_];
-    memset(rot,0,sizeof(double)*nirrep_);
-
-    // this array forms a reducible representation for translations along x,y,z
-    double *trans = new double[nirrep_];
-    memset(trans,0,sizeof(double)*nirrep_);
 
     // Handle irreducible representations:
     switch (bits_) {

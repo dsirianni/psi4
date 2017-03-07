@@ -3,7 +3,7 @@
 #
 # Psi4: an open-source quantum chemistry software package
 #
-# Copyright (c) 2007-2016 The Psi4 Developers.
+# Copyright (c) 2007-2017 The Psi4 Developers.
 #
 # The copyrights for code used from other parties are included in
 # the corresponding files.
@@ -78,7 +78,7 @@ def cubeprop(wfn, **kwargs):
     >>> E, wfn = energy('b3lyp', return_wfn=True)
     >>> cubeprop(wfn)
 
-    >>> # [2] Cube files for density (alpha, beta, total, spin) and four orbitals 
+    >>> # [2] Cube files for density (alpha, beta, total, spin) and four orbitals
     >>> #     (two alpha, two beta)
     >>> set cubeprop_tasks ['orbitals', 'density']
     >>> set cubeprop_orbitals [5, 6, -5, -6]
@@ -89,6 +89,10 @@ def cubeprop(wfn, **kwargs):
     # By default compute the orbitals
     if not core.has_global_option_changed('CUBEPROP_TASKS'):
         core.set_global_option('CUBEPROP_TASKS',['ORBITALS'])
+
+    if ((core.get_global_option('INTEGRAL_PACKAGE') == 'ERD') and
+        ('ESP' in core.get_global_option('CUBEPROP_TASKS'))):
+        raise ValidationError('INTEGRAL_PACKAGE ERD does not play nicely with electrostatic potential, so stopping.')
 
     cp = core.CubeProperties(wfn)
     cp.compute_properties()
@@ -104,16 +108,6 @@ def get_memory():
     return core.get_memory()
 
 
-def set_num_threads(nthread):
-    """Function to reset the number of threads to parallelize across."""
-    core.set_nthread(nthread)
-
-
-def get_num_threads():
-    """Function to return the number of threads to parallelize across."""
-    return core.nthread()
-
-
 def success(label):
     """Function to print a '*label*...PASSED' line to screen.
     Used by :py:func:`util.compare_values` family when functions pass.
@@ -126,21 +120,31 @@ def success(label):
 
 
 # Test functions
-def compare_values(expected, computed, digits, label):
+def compare_values(expected, computed, digits, label, exitonfail=True):
     """Function to compare two values. Prints :py:func:`util.success`
-    when value *computed* matches value *expected* to number of *digits*.
-    Performs a system exit on failure. Used in input files in the test suite.
+    when value *computed* matches value *expected* to number of *digits*
+    (or to *digits* itself when *digits* < 1 e.g. digits=0.04). Performs
+    a system exit on failure unless *exitonfail* False, in which case
+    returns error message. Used in input files in the test suite.
 
     """
-    message = ("\t%s: computed value (%.*f) does not match (%.*f) to %d decimal places." % (label, digits+1, computed, digits+1, expected, digits))
-    if (abs(expected - computed) > 10 ** (-digits)):
+    if digits > 1:
+        thresh = 10 ** -digits
+        message = ("\t%s: computed value (%.*f) does not match (%.*f) to %d digits." % (label, digits+1, computed, digits+1, expected, digits))
+    else:
+        thresh = digits
+        message = ("\t%s: computed value (%f) does not match (%f) to %f digits." % (label, computed, expected, digits))
+    if abs(expected - computed) > thresh:
         print(message)
-        raise TestComparisonError(message)
-    if ( math.isnan(computed) ):
+        if exitonfail:
+            raise TestComparisonError(message)
+    if math.isnan(computed):
         print(message)
         print("\tprobably because the computed value is nan.")
-        raise TestComparisonError(message)
+        if exitonfail:
+            raise TestComparisonError(message)
     success(label)
+    return True
 
 
 def compare_integers(expected, computed, label):
@@ -153,6 +157,7 @@ def compare_integers(expected, computed, label):
         message = ("\t%s: computed value (%d) does not match (%d)." % (label, computed, expected))
         raise TestComparisonError(message)
     success(label)
+    return True
 
 
 def compare_strings(expected, computed, label):
@@ -165,6 +170,7 @@ def compare_strings(expected, computed, label):
         message = ("\t%s: computed value (%s) does not match (%s)." % (label, computed, expected))
         raise TestComparisonError(message)
     success(label)
+    return True
 
 
 def compare_matrices(expected, computed, digits, label):
@@ -208,6 +214,7 @@ def compare_matrices(expected, computed, digits, label):
             expected.print_out()
             raise TestComparisonError("\n")
     success(label)
+    return True
 
 
 def compare_vectors(expected, computed, digits, label):
@@ -240,6 +247,8 @@ def compare_vectors(expected, computed, digits, label):
             message = ("\t%s: computed value (%s) does not match (%s)." % (label, computed.get(irrep, entry), expected.get(irrep, entry)))
             raise TestComparisonError(message)
     success(label)
+    return True
+
 
 def compare_arrays(expected, computed, digits, label):
     """Function to compare two numpy arrays. Prints :py:func:`util.success`
@@ -255,13 +264,15 @@ def compare_arrays(expected, computed, digits, label):
     except:
         raise TestComparisonError("Input objects do not have a shape attribute.")
 
-    if shape1 != shape2: 
+    if shape1 != shape2:
         TestComparisonError("Input shapes do not match.")
 
-    if not np.allclose(expected, computed, atol=digits):
+    tol = 10 ** (-digits)
+    if not np.allclose(expected, computed, atol=tol):
         message = "\tArray difference norm is %12.6f." % np.linalg.norm(expected - computed)
         raise TestComparisonError(message)
     success(label)
+    return True
 
 
 def compare_cubes(expected, computed, label):
@@ -282,6 +293,7 @@ def compare_cubes(expected, computed, label):
         message = ("\t%s: computed cube file does not match expected cube file." % (label, computed, expected))
         raise TestComparisonError(message)
     success(label)
+    return True
 
 
 def copy_file_to_scratch(filename, prefix, namespace, unit, move = False):

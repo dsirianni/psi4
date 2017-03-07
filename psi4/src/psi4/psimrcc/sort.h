@@ -3,7 +3,7 @@
  *
  * Psi4: an open-source quantum chemistry software package
  *
- * Copyright (c) 2007-2016 The Psi4 Developers.
+ * Copyright (c) 2007-2017 The Psi4 Developers.
  *
  * The copyrights for code used from other parties are included in
  * the corresponding files.
@@ -67,13 +67,13 @@ private:
   void init();
   void cleanup();
 
-  // In-core algorithm
-  void   build_integrals_in_core();
-  void   frozen_core_energy_in_core();
-  void   sort_integrals_in_core();
-  void   form_two_electron_integrals_in_core(MatrixMap::iterator& iter);
-  void   form_fock_in_core(MatrixMap::iterator& iter);
-  double add_fock_two_in_core(int p, int q, int k, bool exchange);
+//  // In-core algorithm
+//  void   build_integrals_in_core();
+//  void   frozen_core_energy_in_core();
+//  void   sort_integrals_in_core();
+//  void   form_two_electron_integrals_in_core(MatrixMap::iterator& iter);
+//  void   form_fock_in_core(MatrixMap::iterator& iter);
+//  double add_fock_two_in_core(int p, int q, int k, bool exchange);
 
   // Out-of-core algorithm
   void   build_integrals_out_of_core();

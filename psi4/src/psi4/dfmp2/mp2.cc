@@ -3,7 +3,7 @@
  *
  * Psi4: an open-source quantum chemistry software package
  *
- * Copyright (c) 2007-2016 The Psi4 Developers.
+ * Copyright (c) 2007-2017 The Psi4 Developers.
  *
  * The copyrights for code used from other parties are included in
  * the corresponding files.
@@ -27,6 +27,7 @@
 
 #include "mp2.h"
 #include "corr_grad.h"
+#include "psi4/liboptions/liboptions_python.h"
 #include "psi4/lib3index/3index.h"
 #include "psi4/libmints/basisset.h"
 #include "psi4/libmints/matrix.h"
@@ -40,6 +41,7 @@
 #include "psi4/psi4-dec.h"
 #include "psi4/physconst.h"
 #include "psi4/psifiles.h"
+#include "psi4/libmints/extern.h"
 #include "psi4/libmints/twobody.h"
 #include "psi4/libmints/integral.h"
 #include "psi4/libmints/oeprop.h"
@@ -846,7 +848,7 @@ void RDFMP2::print_header()
 {
     int nthread = 1;
     #ifdef _OPENMP
-        nthread = omp_get_max_threads();
+        nthread = Process::environment.get_n_threads();
     #endif
 
     outfile->Printf( "\t --------------------------------------------------------\n");
@@ -889,7 +891,7 @@ void RDFMP2::form_Aia()
     int nthread = 1;
     #ifdef _OPENMP
         if (options_.get_int("DF_INTS_NUM_THREADS") == 0) {
-            nthread = omp_get_max_threads();
+            nthread = Process::environment.get_n_threads();
         } else {
             nthread = options_.get_int("DF_INTS_NUM_THREADS");
         }
@@ -1056,7 +1058,7 @@ void RDFMP2::form_energy()
     // Thread considerations
     int nthread = 1;
     #ifdef _OPENMP
-        nthread = omp_get_max_threads();
+        nthread = Process::environment.get_n_threads();
     #endif
 
     // Memory
@@ -1183,7 +1185,7 @@ void RDFMP2::form_Pab()
     // Thread considerations
     int nthread = 1;
     #ifdef _OPENMP
-        nthread = omp_get_max_threads();
+        nthread = Process::environment.get_n_threads();
     #endif
 
     // Memory
@@ -1372,7 +1374,7 @@ void RDFMP2::form_Pij()
     // Thread considerations
     int nthread = 1;
     #ifdef _OPENMP
-        nthread = omp_get_max_threads();
+        nthread = Process::environment.get_n_threads();
     #endif
 
     // Memory
@@ -1552,7 +1554,7 @@ void RDFMP2::form_AB_x_terms()
 
     int num_threads = 1;
     #ifdef _OPENMP
-        num_threads = omp_get_max_threads();
+        num_threads = Process::environment.get_n_threads();
     #endif
 
     // => Integrals <= //
@@ -1708,7 +1710,7 @@ void RDFMP2::form_Amn_x_terms()
 
     int num_threads = 1;
     #ifdef _OPENMP
-        num_threads = omp_get_max_threads();
+        num_threads = Process::environment.get_n_threads();
     #endif
 
     // => Integrals <= //
@@ -1920,7 +1922,7 @@ void RDFMP2::form_L()
 
     int num_threads = 1;
     #ifdef _OPENMP
-        num_threads = omp_get_max_threads();
+        num_threads = Process::environment.get_n_threads();
     #endif
 
     // => Integrals <= //
@@ -2734,7 +2736,7 @@ void RDFMP2::form_gradient()
         // Thread count
         int threads = 1;
         #ifdef _OPENMP
-            threads = omp_get_max_threads();
+            threads = Process::environment.get_n_threads();
         #endif
 
         // Potential derivatives
@@ -2799,6 +2801,18 @@ void RDFMP2::form_gradient()
         }
     }
     timer_off("Grad: V");
+
+    // If an external field exists, add it to the one-electron Hamiltonian
+    py::object pyExtern = dynamic_cast<PythonDataType*>(options_["EXTERN"].get())->to_python();
+    if (pyExtern) {
+        std::shared_ptr<ExternalPotential> external = pyExtern.cast<std::shared_ptr<ExternalPotential>>();
+        if (external) {
+            gradient_terms.push_back("External Potential");
+            timer_on("Grad: External");
+            gradients_["External Potential"] = external->computePotentialGradients(basisset_, PAO);
+            timer_off("Grad: External");
+        }  // end external
+    }
 
     //gradients_["One-Electron"] = SharedMatrix(gradients_["Nuclear"]->clone());
     //gradients_["One-Electron"]->set_name("One-Electron Gradient");
@@ -2970,7 +2984,7 @@ void UDFMP2::print_header()
 {
     int nthread = 1;
     #ifdef _OPENMP
-        nthread = omp_get_max_threads();
+        nthread = Process::environment.get_n_threads();
     #endif
 
     outfile->Printf( "\t --------------------------------------------------------\n");
@@ -3018,7 +3032,7 @@ void UDFMP2::form_Aia()
     int nthread = 1;
     #ifdef _OPENMP
         if (options_.get_int("DF_INTS_NUM_THREADS") == 0) {
-            nthread = omp_get_max_threads();
+            nthread = Process::environment.get_n_threads();
         } else {
             nthread = options_.get_int("DF_INTS_NUM_THREADS");
         }
@@ -3221,7 +3235,7 @@ void UDFMP2::form_energy()
     // Thread considerations
     int nthread = 1;
     #ifdef _OPENMP
-        nthread = omp_get_max_threads();
+        nthread = Process::environment.get_n_threads();
     #endif
 
     // Memory
@@ -3342,7 +3356,7 @@ void UDFMP2::form_energy()
     // Thread considerations
     int nthread = 1;
     #ifdef _OPENMP
-        nthread = omp_get_max_threads();
+        nthread = Process::environment.get_n_threads();
     #endif
 
     // Memory
@@ -3467,7 +3481,7 @@ void UDFMP2::form_energy()
     // Thread considerations
     int nthread = 1;
     #ifdef _OPENMP
-        nthread = omp_get_max_threads();
+        nthread = Process::environment.get_n_threads();
     #endif
 
     // Memory
@@ -3646,7 +3660,7 @@ void RODFMP2::print_header()
 {
     int nthread = 1;
     #ifdef _OPENMP
-        nthread = omp_get_max_threads();
+        nthread = Process::environment.get_n_threads();
     #endif
 
     outfile->Printf( "\t --------------------------------------------------------\n");

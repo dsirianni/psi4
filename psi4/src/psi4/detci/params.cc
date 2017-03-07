@@ -3,7 +3,7 @@
  *
  * Psi4: an open-source quantum chemistry software package
  *
- * Copyright (c) 2007-2016 The Psi4 Developers.
+ * Copyright (c) 2007-2017 The Psi4 Developers.
  *
  * The copyrights for code used from other parties are included in
  * the corresponding files.
@@ -128,13 +128,7 @@ void CIWavefunction::get_parameters(Options &options)
   Parameters_->ras3_lvl = -1;
   Parameters_->ras4_lvl = -1;
 
-  if (Parameters_->wfn == "DETCAS" ||
-      Parameters_->wfn == "CASSCF" ||
-      Parameters_->wfn == "RASSCF")
-    Parameters_->guess_vector = PARM_GUESS_VEC_DFILE;
-  else
-    Parameters_->guess_vector = PARM_GUESS_VEC_H0_BLOCK;
-
+  Parameters_->guess_vector = PARM_GUESS_VEC_H0_BLOCK;
 
   Parameters_->neg_only = 1;
   Parameters_->nunits = 1;
@@ -340,17 +334,26 @@ void CIWavefunction::get_parameters(Options &options)
 
   Parameters_->diag_method = METHOD_DAVIDSON_LIU_SEM;
   if (options["DIAG_METHOD"].has_changed()) {
-    std::string line1 = options.get_str("DIAG_METHOD");
-    if (line1 == "RSP") Parameters_->diag_method = METHOD_RSP;
-    if (line1 == "OLSEN") Parameters_->diag_method = METHOD_OLSEN;
-    if (line1 == "MITRUSHENKOV")
-      Parameters_->diag_method = METHOD_MITRUSHENKOV;
-    if (line1 == "DAVIDSON")
-      Parameters_->diag_method = METHOD_DAVIDSON_LIU_SEM;
-    if (line1 == "SEM")
-      Parameters_->diag_method = METHOD_DAVIDSON_LIU_SEM;
-    if (line1 == "SEMTEST")
-      Parameters_->diag_method = METHOD_RSPTEST_OF_SEM;
+      std::string line1 = options.get_str("DIAG_METHOD");
+      if (line1 == "RSP") {
+          Parameters_->diag_method = METHOD_RSP;
+          Parameters_->neg_only = 0;
+      }
+      else if (line1 == "OLSEN") {
+          Parameters_->diag_method = METHOD_OLSEN;
+      }
+      else if (line1 == "MITRUSHENKOV") {
+          Parameters_->diag_method = METHOD_MITRUSHENKOV;
+      }
+      else if (line1 == "DAVIDSON") {
+          Parameters_->diag_method = METHOD_DAVIDSON_LIU_SEM;
+      }
+      else if (line1 == "SEM") {
+          Parameters_->diag_method = METHOD_DAVIDSON_LIU_SEM;
+      }
+      else if (line1 == "SEMTEST") {
+          Parameters_->diag_method = METHOD_RSPTEST_OF_SEM;
+      }
   }
 
   if ((Parameters_->diag_method == METHOD_RSP) & (Parameters_->icore != 1)){
@@ -488,7 +491,6 @@ void CIWavefunction::get_parameters(Options &options)
   if (Parameters_->dipmom == 1) Parameters_->opdm = 1;
 
   Parameters_->root = options.get_int("FOLLOW_ROOT");
-  Parameters_->root -= 1;
   if (Parameters_->root < 0) Parameters_->root = 0;
 
   if (options["TPDM"].has_changed())
@@ -592,41 +594,42 @@ void CIWavefunction::get_parameters(Options &options)
 
   /* Does the user request a state-averaged calculation? */
   if (options["AVG_STATES"].has_changed()) {
-    i = options["AVG_STATES"].size();
-    if (i < 1 || i > Parameters_->num_roots) {
-      std::string str = "Invalid number of states to average (";
-      str += std::to_string( i) ;
-      str += ")";
-      throw PsiException(str,__FILE__,__LINE__);
-    }
+      i = options["AVG_STATES"].size();
+      if (i < 1 || i > Parameters_->num_roots) {
+          std::string str = "Invalid number of states to average (";
+          str += std::to_string(i);
+          str += ")";
+          throw PsiException(str, __FILE__, __LINE__);
+      }
 
-    Parameters_->average_states.resize(i);
-    Parameters_->average_weights.resize(i);
-    Parameters_->average_num = i;
-    for (i=0;i<Parameters_->average_num;i++) {
-      Parameters_->average_states[i] = options["AVG_STATES"][i].to_integer();
-      if (Parameters_->average_states[i] < 1) {
-        std::string str = "AVG_STATES start numbering from 1.\n";
-        str += "Invalid state number ";
-        str += std::to_string( Parameters_->average_states[i]) ;
-        throw PsiException(str,__FILE__,__LINE__);
+      Parameters_->average_states.resize(i);
+      Parameters_->average_weights.resize(i);
+      Parameters_->average_num = i;
+      for (i = 0; i < Parameters_->average_num; i++) {
+          Parameters_->average_states[i] = options["AVG_STATES"][i].to_integer();
+          if (Parameters_->average_states[i] >= Parameters_->num_roots) {
+              throw PsiException("Average state greater than the number of roots!", __FILE__, __LINE__);
+          }
+          if (Parameters_->average_states[i] < 0) {
+              std::string str = "AVG_STATES start numbering from 0.\n";
+              str += "Invalid state number ";
+              str += std::to_string(Parameters_->average_states[i]);
+              throw PsiException(str, __FILE__, __LINE__);
+          }
+          Parameters_->average_weights[i] = 1.0 / ((double)Parameters_->average_num);
       }
-      Parameters_->average_states[i] -= 1; /* number from 1 externally */
-      Parameters_->average_weights[i] = 1.0/((double)Parameters_->average_num);
-    }
 
-    if (options["AVG_WEIGHTS"].has_changed()) {
-      if (options["AVG_WEIGHTS"].size() != Parameters_->average_num) {
-        std::string str = "Mismatched number of average weights (";
-        str += std::to_string( i) ;
-        str += ")";
-        throw PsiException(str,__FILE__,__LINE__);
+      if (options["AVG_WEIGHTS"].has_changed()) {
+          if (options["AVG_WEIGHTS"].size() != Parameters_->average_num) {
+              std::string str = "Mismatched number of average weights (";
+              str += std::to_string(i);
+              str += ")";
+              throw PsiException(str, __FILE__, __LINE__);
+          }
+          for (i = 0; i < Parameters_->average_num; i++) {
+              Parameters_->average_weights[i] = options["AVG_WEIGHTS"][i].to_double();
+          }
       }
-      for (i=0; i<Parameters_->average_num; i++) {
-        Parameters_->average_weights[i] =
-          options["AVG_WEIGHTS"][i].to_double();
-      }
-    }
 
     if (Parameters_->average_num > 1) Parameters_->opdm_ave = 1;
 
@@ -938,7 +941,7 @@ void CIWavefunction::print_parameters(void) {
     outfile->Printf("\n    STATE AVERAGE  = ");
     for (i  = 0; i < Parameters_->average_num; i++) {
         if (i % 5 == 0 && i != 0) outfile->Printf("\n");
-        outfile->Printf("%2d(%4.2lf) ", Parameters_->average_states[i] + 1,
+        outfile->Printf("%2d(%4.2lf) ", Parameters_->average_states[i],
                         Parameters_->average_weights[i]);
     }
 
@@ -1508,7 +1511,7 @@ void CIWavefunction::print_ras_parameters(void) {
 
   // Virtual spaces
   if (Parameters_->mcscf) {
-    orbital_info << _concat_dim("Restricted DOCC", sdist, get_dimension("VIR"), tdist, hdist);
+    orbital_info << _concat_dim("Restricted UOCC", sdist, get_dimension("VIR"), tdist, hdist);
     orbital_info << _concat_dim("Frozen UOCC", sdist, get_dimension("FZV"), tdist, hdist);
   } else {
     orbital_info << _concat_dim("Dropped UOCC", sdist, get_dimension("DRV"), tdist, hdist);

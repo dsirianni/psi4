@@ -13,8 +13,10 @@
 
 if(ENABLE_64BIT_INTEGERS)
     set(MATH_LIB_SEARCH_ORDER MKL ACML)
+elseif(APPLE)
+    set(MATH_LIB_SEARCH_ORDER MKL SYSTEM_NATIVE OPENBLAS ESSL ATLAS ACML)  # prefer Accelerate unless MKL
 else()
-    set(MATH_LIB_SEARCH_ORDER MKL ESSL ATLAS ACML SYSTEM_NATIVE)
+    set(MATH_LIB_SEARCH_ORDER MKL OPENBLAS ESSL ATLAS ACML SYSTEM_NATIVE)
 endif()
 
 if(NOT DEFINED MKL_FLAG)
@@ -49,19 +51,19 @@ foreach(_service BLAS LAPACK)
         set(USE_BUILTIN_${_service} FALSE)
     endif()
 
-    if(DEFINED EXPLICIT_${_service}_LIB)
-        if(ENABLE_AUTO_${_service})
-            message(FATAL_ERROR "EXPLICIT_${_service}_LIB and ENABLE_AUTO_${_service} together makes no sense")
-        endif()
-        if(ENABLE_BUILTIN_${_service})
-            message(FATAL_ERROR "EXPLICIT_${_service}_LIB and ENABLE_BUILTIN_${_service} together makes no sense")
-        endif()
-        set(EXTERNAL_LIBS
-            ${EXTERNAL_LIBS}
-            ${EXPLICIT_${_service}_LIB}
-            )
-        message("-- ${_service}: using explit library (${EXPLICIT_${_service}_LIB})")
-    endif()
+    #if(DEFINED EXPLICIT_${_service}_LIB)
+    #    if(ENABLE_AUTO_${_service})
+    #        message(FATAL_ERROR "EXPLICIT_${_service}_LIB and ENABLE_AUTO_${_service} together makes no sense")
+    #    endif()
+    #    if(ENABLE_BUILTIN_${_service})
+    #        message(FATAL_ERROR "EXPLICIT_${_service}_LIB and ENABLE_BUILTIN_${_service} together makes no sense")
+    #    endif()
+    #    set(EXTERNAL_LIBS
+    #        ${EXTERNAL_LIBS}
+    #        ${EXPLICIT_${_service}_LIB}
+    #        )
+    #    message("-- ${_service}: using explicit library (${EXPLICIT_${_service}_LIB})")
+    #endif()
 endforeach()
 
 if(ENABLE_CRAY_WRAPPERS)
@@ -76,25 +78,27 @@ if(ENABLE_CRAY_WRAPPERS)
     message("-- Use CRAY wrappers; this disables math detection and builtin math libraries")
 endif()
 
-if(DEFINED MKL_FLAG)
-    foreach(_service BLAS LAPACK)
-        if(ENABLE_BUILTIN_${_service})
-            message(FATAL_ERROR "MKL_FLAG and ENABLE_BUILTIN_${_service} together makes no sense")
-        endif()
-        if(ENABLE_AUTO_${_service})
-            message(FATAL_ERROR "MKL_FLAG and ENABLE_AUTO_${_service} together makes no sense")
-        endif()
-    endforeach()
-    set(EXTERNAL_LIBS
-        ${EXTERNAL_LIBS}
-        ${MKL_FLAG}
-        )
-    message("-- User set explicit MKL flag which is passed to the compiler and linker: ${MKL_FLAG}")
-    message("-- This disables math detection and builtin math libraries")
-    message("-- Setting -DHAVE_MKL_BLAS and -DHAVE_MKL_LAPACK")
-    add_definitions(-DHAVE_MKL_BLAS)
-    add_definitions(-DHAVE_MKL_LAPACK)
-endif()
+# EXTERNAL_LIBS no longer supported, and -mkl won't get written to LAPACKTarget correctly
+#
+#if(DEFINED MKL_FLAG)
+#    foreach(_service BLAS LAPACK)
+#        if(ENABLE_BUILTIN_${_service})
+#            message(FATAL_ERROR "MKL_FLAG and ENABLE_BUILTIN_${_service} together makes no sense")
+#        endif()
+#        if(ENABLE_AUTO_${_service})
+#            message(FATAL_ERROR "MKL_FLAG and ENABLE_AUTO_${_service} together makes no sense")
+#        endif()
+#    endforeach()
+#    set(EXTERNAL_LIBS
+#        ${EXTERNAL_LIBS}
+#        ${MKL_FLAG}
+#        )
+#    message("-- User set explicit MKL flag which is passed to the compiler and linker: ${MKL_FLAG}")
+#    message("-- This disables math detection and builtin math libraries")
+#    message("-- Setting -DHAVE_MKL_BLAS and -DHAVE_MKL_LAPACK")
+#    add_definitions(-DHAVE_MKL_BLAS)
+#    add_definitions(-DHAVE_MKL_LAPACK)
+#endif()
 
 foreach(_service BLAS LAPACK)
     if(ENABLE_AUTO_${_service})
@@ -105,8 +109,3 @@ foreach(_service BLAS LAPACK)
     endif()
 endforeach()
 
-if(APPLE)
-    set(LAPACKBLAS_LIBRARIES ${LAPACK_LIBRARIES} ${BLAS_LIBRARIES})
-else()
-    set(LAPACKBLAS_LIBRARIES -Wl,--start-group ${LAPACK_LIBRARIES} ${BLAS_LIBRARIES} -Wl,--end-group)
-endif()

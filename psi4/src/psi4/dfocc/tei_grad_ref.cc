@@ -3,7 +3,7 @@
  *
  * Psi4: an open-source quantum chemistry software package
  *
- * Copyright (c) 2007-2016 The Psi4 Developers.
+ * Copyright (c) 2007-2017 The Psi4 Developers.
  *
  * The copyrights for code used from other parties are included in
  * the corresponding files.
@@ -57,7 +57,7 @@ void DFOCC::tei_grad_ref()
     // Two-electron gradients
     int df_ints_num_threads_ = 1;
     #ifdef _OPENMP
-        df_ints_num_threads_ = omp_get_max_threads();
+        df_ints_num_threads_ = Process::environment.get_n_threads();
     #endif
 
     // Read in the basis set informations

@@ -3,7 +3,7 @@
 #
 # Psi4: an open-source quantum chemistry software package
 #
-# Copyright (c) 2007-2016 The Psi4 Developers.
+# Copyright (c) 2007-2017 The Psi4 Developers.
 #
 # The copyrights for code used from other parties are included in
 # the corresponding files.
@@ -145,7 +145,7 @@ class QMMM(object):
         position (*x*, *y*, *z*) Angstroms.
 
         """
-        self.charges.append([Q, x / p4const.psi_bohr2angstroms, y / p4const.psi_bohr2angstroms, z / p4const.psi_bohr2angstroms])
+        self.charges.append([Q, x / constants.bohr2angstroms, y / constants.bohr2angstroms, z / constants.bohr2angstroms])
 
     def __str__(self):
 

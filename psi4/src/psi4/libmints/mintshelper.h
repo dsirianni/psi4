@@ -3,7 +3,7 @@
  *
  * Psi4: an open-source quantum chemistry software package
  *
- * Copyright (c) 2007-2016 The Psi4 Developers.
+ * Copyright (c) 2007-2017 The Psi4 Developers.
  *
  * The copyrights for code used from other parties are included in
  * the corresponding files.
@@ -40,6 +40,8 @@ class CorrelationFactor;
 class TwoBodyAOInt;
 class PetiteList;
 class ThreeCenterOverlapInt;
+class OneBodyAOInt;
+class OneBodySOInt;
 
 /**
 * The MintsHelper object, places molecular integrals
@@ -59,6 +61,7 @@ private:
     std::shared_ptr<TwoBodyAOInt> eriInts_;
     std::shared_ptr<BasisSet> rel_basisset_;
     int print_;
+    int nthread_;
 
     /// Value which any two-electron integral is below is discarded
     double cutoff_;
@@ -78,6 +81,8 @@ private:
     SharedMatrix ao_3coverlap_helper(const std::string &label, std::shared_ptr<ThreeCenterOverlapInt> ints);
 
     void common_init();
+
+    void one_body_ao_computer(std::vector<std::shared_ptr<OneBodyAOInt>> obv, SharedMatrix out, bool symm);
 
 public:
 
@@ -103,6 +108,7 @@ public:
 
     /// Sets the print level
     void set_print(int print) {print_ = print; }
+    void set_nthread(int nthread) {nthread_ = nthread; }
 
     /// Returns petite list that is capable of transforming basis functions (nbf) to SO's.
     std::shared_ptr<PetiteList> petite_list() const;

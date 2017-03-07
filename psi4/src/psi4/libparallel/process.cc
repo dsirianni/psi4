@@ -3,7 +3,7 @@
  *
  * Psi4: an open-source quantum chemistry software package
  *
- * Copyright (c) 2007-2016 The Psi4 Developers.
+ * Copyright (c) 2007-2017 The Psi4 Developers.
  *
  * The copyrights for code used from other parties are included in
  * the corresponding files.
@@ -32,7 +32,7 @@
 #include <regex>
 
 //MKL Header
-#ifdef __INTEL_MKL__
+#ifdef USING_LAPACK_MKL
 #include <mkl.h>
 #endif
 
@@ -78,7 +78,7 @@ void Process::Environment::initialize()
     nthread_ = 1;
 
 #ifdef _OPENMP
-    nthread_ = omp_get_max_threads();
+    nthread_ = Process::environment.get_n_threads();
 #endif
 }
 
@@ -88,7 +88,7 @@ void Process::Environment::set_n_threads(int nthread)
 #ifdef _OPENMP
     omp_set_num_threads(nthread_);
 #endif
-#ifdef __INTEL_MKL__
+#ifdef USING_LAPACK_MKL
     mkl_set_num_threads(nthread_);
 #endif
 

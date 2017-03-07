@@ -3,7 +3,7 @@
  *
  * Psi4: an open-source quantum chemistry software package
  *
- * Copyright (c) 2007-2016 The Psi4 Developers.
+ * Copyright (c) 2007-2017 The Psi4 Developers.
  *
  * The copyrights for code used from other parties are included in
  * the corresponding files.
@@ -30,6 +30,7 @@
 #include "psi4/psifiles.h"
 #include "psi4/libiwl/iwl.hpp"
 #include "psi4/libqt/qt.h"
+#include "psi4/libciomr/libciomr.h"
 #include "psi4/libmints/matrix.h"
 #include "psi4/libmints/molecule.h"
 #include "psi4/libmints/basisset.h"
@@ -160,7 +161,7 @@ void DFOCC::oei_grad()
         // Thread count
         int threads = 1;
         #ifdef _OPENMP
-            threads = omp_get_max_threads();
+            threads = Process::environment.get_n_threads();
         #endif
 
         // Potential derivatives

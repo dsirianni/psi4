@@ -3,7 +3,7 @@
 #
 # Psi4: an open-source quantum chemistry software package
 #
-# Copyright (c) 2007-2016 The Psi4 Developers.
+# Copyright (c) 2007-2017 The Psi4 Developers.
 #
 # The copyrights for code used from other parties are included in
 # the corresponding files.
@@ -28,9 +28,11 @@
 """Module with utility functions that act on molecule objects."""
 from __future__ import absolute_import
 import math
+import re
 
 from psi4 import core
-from psi4.driver.p4util import p4const
+from psi4.driver.p4util import constants
+from psi4.driver.inputparser import process_pubchem_command, pubchemre
 
 
 def extract_clusters(mol, ghost=True, cluster_size=0):
@@ -252,7 +254,7 @@ def BFS(self):
         while Queue:                     # BFS within a fragment
             for u in Queue:              # find all white neighbors to vertex u
                 for i in White:
-                    dist = p4const.psi_bohr2angstroms * math.sqrt(
+                    dist = constants.bohr2angstroms * math.sqrt(
                            (self.x(i) - self.x(u)) ** 2 +
                            (self.y(i) - self.y(u)) ** 2 +
                            (self.z(i) - self.z(u)) ** 2)
@@ -285,6 +287,17 @@ def dynamic_variable_bind(cls):
 
 dynamic_variable_bind(core.Molecule)  # pass class type, not class instance
 
+
+def filter_comments(string):
+    """Remove from *string* any Python-style comments ('#' to end of line)."""
+
+    filtered = []
+    for line in string.splitlines():
+        line = line.partition('#')[0]
+        filtered.append(line.rstrip())
+    return '\n'.join(filtered)
+
+
 #
 # Define geometry to be used by PSI4.
 # The molecule created by this will be set in options.
@@ -295,11 +308,15 @@ dynamic_variable_bind(core.Molecule)  # pass class type, not class instance
 #   H  0.0 0.0 0.0
 #
 def geometry(geom, name="default"):
-    """Function to create a molecule object of name *name*
-    from the geometry in string *geom*. Permitted for user use but deprecated in
-    driver in favor of explicit molecule-passing.
+    """Function to create a molecule object of name *name* from the
+    geometry in string *geom*. Permitted for user use but deprecated
+    in driver in favor of explicit molecule-passing. Comments within
+    the string are filtered.
 
     """
+    core.efp_init()
+    geom = pubchemre.sub(process_pubchem_command, geom)
+    geom = filter_comments(geom)
     molecule = core.Molecule.create_molecule_from_string(geom)
     molecule.set_name(name)
 

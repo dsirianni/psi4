@@ -3,7 +3,7 @@
  *
  * Psi4: an open-source quantum chemistry software package
  *
- * Copyright (c) 2007-2016 The Psi4 Developers.
+ * Copyright (c) 2007-2017 The Psi4 Developers.
  *
  * The copyrights for code used from other parties are included in
  * the corresponding files.
@@ -33,11 +33,7 @@
 #include "psi4/psi4-dec.h"
 #include "psi4/libmints/molecule.h"
 
-#include <cstdlib>
-#include <unistd.h>
-#include <cstring>
-#include <regex>
-#include <memory>
+#include <string>
 
 namespace psi {
 
@@ -62,35 +58,23 @@ namespace psi {
 ** \ingroup MINTS
 */
 
-std::string get_writer_file_prefix(std::string molecule_name)
+std::string get_writer_file_prefix(const std::string& molecule_name)
 {
-
-    std::string label = Process::environment.options.get_str("WRITER_FILE_LABEL");
-    if (label != "") {
-        return (label);
+    const std::string pid="."+to_string(getpid());
+    const std::string label = Process::environment.options.get_str("WRITER_FILE_LABEL");
+    if (!label.empty()) {
+        return label+pid;
     }
 
     // If no available options WRITER_FILE_LABEL, then we build a defult:
     // Get the basename of the output filename, append any active molecule name
     // to it, and return the resulting string
-
-    std::regex outfileBase("(\\w+)(\\.out|\\.dat)", std::regex_constants::icase);
-    std::smatch reMatches;
-
-    // outfile_name is in psi4-dec.h and is a global std::string with the
-    // name of the output file
-    std::string prefix;
-    if (std::regex_match(outfile_name, reMatches, outfileBase)) {
-        prefix = reMatches[1].str();
-    } else {
-        prefix = outfile_name;
-    }
-
-    if (molecule_name != "") {
+    std::string prefix=outfile_name.substr(0, outfile_name.find_last_of('.'));
+    if (!molecule_name.empty()) {
         prefix += "." + molecule_name;
     }
+    return prefix+pid;
 
-    return (prefix);
 }
 
 

@@ -3,7 +3,7 @@
  *
  * Psi4: an open-source quantum chemistry software package
  *
- * Copyright (c) 2007-2016 The Psi4 Developers.
+ * Copyright (c) 2007-2017 The Psi4 Developers.
  *
  * The copyrights for code used from other parties are included in
  * the corresponding files.
@@ -201,10 +201,14 @@ namespace psi { namespace ccdensity {
 
       outfile->Printf( "\tTotal two-electron energy  = %20.15f\n", total_two_energy);
       if (params.ground) {
-	outfile->Printf( "\tCCSD correlation energy    = %20.15f\n",
-		one_energy + total_two_energy);
-outfile->Printf( "\tTotal CCSD energy          = %20.15f\n",
-		one_energy + total_two_energy + moinfo.eref);
+	//outfile->Printf( "\tCCSD correlation energy    = %20.15f\n",
+	//	one_energy + total_two_energy);
+	//outfile->Printf( "\tTotal CCSD energy          = %20.15f\n",
+	//	one_energy + total_two_energy + moinfo.eref);
+	outfile->Printf( "\t%-7s correlation energy = %20.15f\n", params.wfn == "CCSD_T" ? "CCSD(T)" : params.wfn.c_str(),
+                one_energy + total_two_energy);
+        outfile->Printf( "\tTotal %-7s energy       = %20.15f\n", params.wfn == "CCSD_T" ? "CCSD(T)" : params.wfn.c_str(),
+                one_energy + total_two_energy + moinfo.eref);
       }
       else {
 outfile->Printf( "\tTotal EOM CCSD correlation energy        = %20.15f\n",

@@ -3,7 +3,7 @@
  *
  * Psi4: an open-source quantum chemistry software package
  *
- * Copyright (c) 2007-2016 The Psi4 Developers.
+ * Copyright (c) 2007-2017 The Psi4 Developers.
  *
  * The copyrights for code used from other parties are included in
  * the corresponding files.
@@ -49,7 +49,6 @@
 namespace psi { namespace detci {
 
 #define SMALL_DET 1e-10
-#define CONFIG_STRING_MAX 200
 
 
 /*
@@ -71,7 +70,7 @@ void CIWavefunction::H0block_init(unsigned int size) {
    else size2 = H0block_->size;
 
    if (print_ > 1)
-     outfile->Printf("Total H0block size (including coupling): %d\n",size2);
+     outfile->Printf("    Total H0block size (including coupling): %d\n",size2);
 
    H0block_->osize = H0block_->size;
    H0block_->guess_size = Parameters_->h0guess_size;
@@ -145,17 +144,16 @@ void CIWavefunction::H0block_free(void)
 void CIWavefunction::H0block_print(void)
 {
    int i;
-   char configstring[CONFIG_STRING_MAX];
 
    outfile->Printf( "\nMembers of H0 block:\n\n");
    for (i=0; i<H0block_->size; i++) {
-      print_config(CalcInfo_->num_ci_orbs, CalcInfo_->num_alp_expl,
+     std::string configstring(print_config(CalcInfo_->num_ci_orbs, CalcInfo_->num_alp_expl,
          CalcInfo_->num_bet_expl, alplist_[H0block_->alplist[i]] +
          H0block_->alpidx[i], betlist_[H0block_->betlist[i]] +
-         H0block_->betidx[i], CalcInfo_->num_drc_orbs, configstring);
+         H0block_->betidx[i], CalcInfo_->num_drc_orbs));
       outfile->Printf( "  %3d [%3d] %10.6lf  Block %2d (%4d,%4d)  %s\n",
          i+1, H0block_->pair[i] + 1, H0block_->H00[i], H0block_->blknum[i],
-         H0block_->alpidx[i], H0block_->betidx[i], configstring);
+         H0block_->alpidx[i], H0block_->betidx[i], configstring.c_str());
       }
 }
 
@@ -305,7 +303,7 @@ void CIWavefunction::H0block_gather(double **mat, int al, int bl, int cscode, in
    else if (cscode == 1)
       target = H0block_->s0b;
    else {
-      printf("(H0block_gather): invalid cscode\n");
+     outfile->Printf("(H0block_gather): invalid cscode\n");
       return;
       }
 
@@ -401,7 +399,7 @@ void CIWavefunction::H0block_setup(int num_blocks, int *Ia_code, int *Ib_code)
          }
       if (!found) {
          H0block_->blknum[member] = -1;
-         printf("(H0block_setup): Can't find CI block!\n");
+        outfile->Printf("(H0block_setup): Can't find CI block!\n");
          }
 
       } /* end loop over members of H0block */
@@ -457,8 +455,8 @@ void CIWavefunction::H0block_pairup(int guess)
   }
 
   if (first == 0) {
-    outfile->Printf( "Warning!  H0block size reduced to zero by ");
-    outfile->Printf( "H0block_pairup!\n");
+    outfile->Printf( "    Warning!  H0block size reduced to zero by ");
+    outfile->Printf( "    H0block_pairup!\n");
   }
 
   if (guess==2) H0block_->coupling_size = newsize - H0block_->size;
@@ -511,8 +509,8 @@ void CIWavefunction::H0block_spin_cpl_chk(void)
     newsize = i+1;
 
     if (newsize == 0) {
-      outfile->Printf( "Warning!  H0block size reduced to zero by ");
-      outfile->Printf( "H0block_spin_cpl_chk!\n");
+      outfile->Printf( "    Warning!  H0block size reduced to zero by ");
+      outfile->Printf( "    H0block_spin_cpl_chk!\n");
     }
     H0block_->size = newsize;
   }
@@ -547,8 +545,8 @@ void CIWavefunction::H0block_spin_cpl_chk(void)
 
     newsize = i+1;
     if (newsize == 0) {
-      outfile->Printf( "Warning!  H0block guess size reduced to zero by ");
-      outfile->Printf( "H0block_spin_cpl_chk!\n");
+      outfile->Printf( "    Warning!  H0block guess size reduced to zero by ");
+      outfile->Printf( "    H0block_spin_cpl_chk!\n");
     }
 
     H0block_->guess_size = newsize;
@@ -575,14 +573,14 @@ void CIWavefunction::H0block_spin_cpl_chk(void)
     newsize = i+1;
 
     if (newsize < H0block_->size) {
-      outfile->Printf( "H0block coupling size reduced below 0 ???\n");
+      outfile->Printf( "    H0block coupling size reduced below 0 ???\n");
       newsize = H0block_->size;
     }
 
     if (newsize == H0block_->size) {
       outfile->Printf(
-        "Warning! H0block coupling size reduced to H0block size by ");
-      outfile->Printf( "H0block_spin_cpl_chk!\n");
+        "    Warning! H0block coupling size reduced to H0block size by ");
+      outfile->Printf( "    H0block_spin_cpl_chk!\n");
     }
 
     H0block_->coupling_size = newsize - H0block_->size;
@@ -717,7 +715,7 @@ void CIWavefunction::H0block_fill()
           H0block_->H0b_diag, 1.0E-14);
 
    if (print_) {
-      outfile->Printf( "\n*** H0 Block Eigenvalue = %12.8lf\n",
+      outfile->Printf( "    H0 Block Eigenvalue = %12.8lf\n",
              H0block_->H0b_eigvals[0] + CalcInfo_->enuc);
 
       }

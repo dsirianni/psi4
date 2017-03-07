@@ -3,7 +3,7 @@
 #
 # Psi4: an open-source quantum chemistry software package
 #
-# Copyright (c) 2007-2016 The Psi4 Developers.
+# Copyright (c) 2007-2017 The Psi4 Developers.
 #
 # The copyrights for code used from other parties are included in
 # the corresponding files.
@@ -1138,3 +1138,5 @@ from .parker import xyz2mol as _parker_xyz2mol_yo
 Molecule.format_molecule_for_mol2 = _parker_xyz2mol_yo
 from .parker import bond_profile as _parker_bondprofile_yo
 Molecule.bond_profile = _parker_bondprofile_yo
+from .interface_gcp import run_gcp as _gcp_qcdb_yo
+Molecule.run_gcp = _gcp_qcdb_yo

@@ -3,7 +3,7 @@
  *
  * Psi4: an open-source quantum chemistry software package
  *
- * Copyright (c) 2007-2016 The Psi4 Developers.
+ * Copyright (c) 2007-2017 The Psi4 Developers.
  *
  * The copyrights for code used from other parties are included in
  * the corresponding files.
@@ -179,11 +179,11 @@ struct SAPTDFInts {
   bool dress_disk_;
   bool active_;
 
-  int i_length_;
-  int j_length_;
-  int ij_length_;
-  int i_start_;
-  int j_start_;
+  size_t i_length_;
+  size_t j_length_;
+  size_t ij_length_;
+  size_t i_start_;
+  size_t j_start_;
 
   double **B_p_;
   double **B_d_;
@@ -206,10 +206,10 @@ struct SAPTDFInts {
 
 struct Iterator {
 
-  int num_blocks;
+  size_t num_blocks;
   int* block_size;
 
-  int curr_block;
+  size_t curr_block;
   long int curr_size;
 
   ~Iterator() { free(block_size); };

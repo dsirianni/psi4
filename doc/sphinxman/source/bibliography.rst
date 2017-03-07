@@ -3,7 +3,7 @@
 .. #
 .. # Psi4: an open-source quantum chemistry software package
 .. #
-.. # Copyright (c) 2007-2016 The Psi4 Developers.
+.. # Copyright (c) 2007-2017 The Psi4 Developers.
 .. #
 .. # The copyrights for code used from other parties are included in
 .. # the corresponding files.
@@ -361,4 +361,12 @@ Bibliography
    A. Szabo and N. S. Ostlund,
    *Modern Quantum Chemistry: Introduction to Advanced Electronic Structure Theory*
    **1982** ISBN:0486691861
+
+.. [Grimme:2015:054107]
+   S. Grimme, J. Brandenburg, C. Bannwarth, and A. Hansen,
+   *J. Chem. Phys.* **143**, 054107 (2015).
+
+.. [Sure:2013:1672]
+   R. Sure and S. Grimme,
+   *J. Comput. Chem.* **15**, 1672 (2013).
 

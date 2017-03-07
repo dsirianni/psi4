@@ -3,7 +3,7 @@
 #
 # Psi4: an open-source quantum chemistry software package
 #
-# Copyright (c) 2007-2016 The Psi4 Developers.
+# Copyright (c) 2007-2017 The Psi4 Developers.
 #
 # The copyrights for code used from other parties are included in
 # the corresponding files.
@@ -36,7 +36,7 @@ from psi4 import core
 
 # Import driver helpers
 from psi4.driver import p4util
-from psi4.driver import p4const
+from psi4.driver import constants
 
 from psi4.driver.p4util.exceptions import *
 
@@ -105,8 +105,8 @@ def _print_nbody_energy(energy_body_dict, header):
         nbody_range.sort()
         for n in nbody_range:
             delta_e = (energy_body_dict[n] - previous_e)
-            delta_e_kcal = delta_e * p4const.psi_hartree2kcalmol
-            int_e_kcal = (energy_body_dict[n] - energy_body_dict[1]) * p4const.psi_hartree2kcalmol
+            delta_e_kcal = delta_e * constants.hartree2kcalmol
+            int_e_kcal = (energy_body_dict[n] - energy_body_dict[1]) * constants.hartree2kcalmol
             core.print_out("""     %4s  %20.12f  %20.12f  %20.12f\n""" %
                                         (n, energy_body_dict[n], int_e_kcal, delta_e_kcal))
             previous_e = energy_body_dict[n]
@@ -292,7 +292,6 @@ def nbody_gufunc(func, method_string, **kwargs):
     ptype_dict = {}
     for n in compute_list.keys():
         core.print_out("\n   ==> N-Body: Now computing %d-body complexes <==\n\n" % n)
-        print("\n   ==> N-Body: Now computing %d-body complexes <==\n" % n)
         total = len(compute_list[n])
         for num, pair in enumerate(compute_list[n]):
             core.print_out("\n       N-Body: Computing complex (%d/%d) with fragments %s in the basis of fragments %s.\n\n" %

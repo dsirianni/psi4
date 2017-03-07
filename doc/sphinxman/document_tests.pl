@@ -5,7 +5,7 @@
 #
 # Psi4: an open-source quantum chemistry software package
 #
-# Copyright (c) 2007-2016 The Psi4 Developers.
+# Copyright (c) 2007-2017 The Psi4 Developers.
 #
 # The copyrights for code used from other parties are included in
 # the corresponding files.
@@ -55,7 +55,7 @@ my %ExeFolder = (
    "cfour/"     => "cfour",
    "libefp/"    => "libefp",
    "pcmsolver/" => "pcmsolver",
-   "dmrg/"      => "dmrg",
+   "chemps2/"   => "chemps2",
    "gdma/"      => "gdma",
    "dkh/"       => "dkh",
    "erd/"       => "erd",
@@ -77,7 +77,7 @@ foreach my $File(readdir SAMPLES){
     next if $File =~ /^cfour$/;
     next if $File =~ /^libefp$/;
     next if $File =~ /^pcmsolver$/;
-    next if $File =~ /^dmrg$/;
+    next if $File =~ /^chemps2$/;
     next if $File =~ /^gdma$/;
     next if $File =~ /^dkh$/;
     next if $File =~ /^erd$/;

@@ -3,7 +3,7 @@
  *
  * Psi4: an open-source quantum chemistry software package
  *
- * Copyright (c) 2007-2016 The Psi4 Developers.
+ * Copyright (c) 2007-2017 The Psi4 Developers.
  *
  * The copyrights for code used from other parties are included in
  * the corresponding files.
@@ -71,7 +71,7 @@ void DFJK::common_init()
 {
     df_ints_num_threads_ = 1;
     #ifdef _OPENMP
-        df_ints_num_threads_ = omp_get_max_threads();
+        df_ints_num_threads_ = Process::environment.get_n_threads();
     #endif
     df_ints_io_ = "NONE";
     condition_ = 1.0E-12;
@@ -137,7 +137,7 @@ SharedVector DFJK::iaia(SharedMatrix Ci, SharedMatrix Ca)
 
     // Temps
     #ifdef _OPENMP
-    int temp_nthread = omp_get_max_threads();
+    int temp_nthread = Process::environment.get_n_threads();
     omp_set_num_threads(omp_nthread_);
     C_temp_.resize(omp_nthread_);
     Q_temp_.resize(omp_nthread_);
@@ -348,7 +348,7 @@ void DFJK::initialize_temps()
 
 
     #ifdef _OPENMP
-    int temp_nthread = omp_get_max_threads();
+    int temp_nthread = Process::environment.get_n_threads();
     omp_set_num_threads(omp_nthread_);
     C_temp_.resize(omp_nthread_);
     Q_temp_.resize(omp_nthread_);
@@ -378,7 +378,7 @@ void DFJK::initialize_w_temps()
     max_rows_w = (max_rows_w < 1 ? 1 : max_rows_w);
 
     #ifdef _OPENMP
-    int temp_nthread = omp_get_max_threads();
+    int temp_nthread = Process::environment.get_n_threads();
     omp_set_num_threads(omp_nthread_);
         C_temp_.resize(omp_nthread_);
         Q_temp_.resize(omp_nthread_);
@@ -919,6 +919,7 @@ void DFJK::initialize_JK_disk()
     // ==> Close out <== //
     Qmn_.reset();
     delete[] eri;
+    delete[] buffer;
 
     psio_->close(unit_,1);
 }
@@ -1512,6 +1513,8 @@ void DFJK::initialize_wK_disk()
     }
     Amn2.reset();
     delete[] eri2;
+    delete[] buffer;
+    delete[] buffer2;
 
     psio_->write_entry(unit_, "Omega", (char*) &omega_, sizeof(double));
     psio_->close(unit_,1);
@@ -1638,6 +1641,7 @@ void DFJK::rebuild_wK_disk()
     }
     Amn2.reset();
     delete[] eri2;
+    delete[] buffer2;
 
     psio_->write_entry(unit_, "Omega", (char*) &omega_, sizeof(double));
     // No need to close

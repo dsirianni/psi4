@@ -3,7 +3,7 @@
  *
  * Psi4: an open-source quantum chemistry software package
  *
- * Copyright (c) 2007-2016 The Psi4 Developers.
+ * Copyright (c) 2007-2017 The Psi4 Developers.
  *
  * The copyrights for code used from other parties are included in
  * the corresponding files.
@@ -73,6 +73,7 @@ protected:
     virtual void finalize();
 
     void save_density_and_energy();
+    void format_guess();
 
     // Second-order convergence code
     void Hx(SharedMatrix x, SharedMatrix ret);

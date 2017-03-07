@@ -3,7 +3,7 @@
 #
 # Psi4: an open-source quantum chemistry software package
 #
-# Copyright (c) 2007-2016 The Psi4 Developers.
+# Copyright (c) 2007-2017 The Psi4 Developers.
 #
 # The copyrights for code used from other parties are included in
 # the corresponding files.
@@ -157,6 +157,7 @@ core.JK.build = pybuild_JK
 ## Python other helps
 
 core.Molecule.run_dftd3 = qcdb.interface_dftd3.run_dftd3
+core.Molecule.run_gcp = qcdb.interface_gcp.run_gcp
 
 
 def set_options(options_dict):
@@ -167,6 +168,7 @@ def set_options(options_dict):
     for k, v, in options_dict.items():
         core.set_global_option(k.upper(), v)
 
+
 def set_module_options(module, options_dict):
     """
     Sets Psi4 module options from a module specification and input dictionary.
@@ -176,5 +178,10 @@ def set_module_options(module, options_dict):
         core.set_local_option(module.upper(), k.upper(), v)
 
 
+def pcm_helper(block):
+    """Passes multiline string *block* to PCMSolver parser."""
 
-
+    with open('pcmsolver.inp', 'w') as handle:
+        handle.write(block)
+    import pcmsolver
+    pcmsolver.parse_pcm_input('pcmsolver.inp')

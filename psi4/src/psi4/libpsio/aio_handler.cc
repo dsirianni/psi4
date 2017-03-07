@@ -3,7 +3,7 @@
  *
  * Psi4: an open-source quantum chemistry software package
  *
- * Copyright (c) 2007-2016 The Psi4 Developers.
+ * Copyright (c) 2007-2017 The Psi4 Developers.
  *
  * The copyrights for code used from other parties are included in
  * the corresponding files.
@@ -39,6 +39,7 @@
 #include <unistd.h>
 #include <memory>
 #include <algorithm>
+#include <functional>
 
 using namespace std;
 
@@ -52,21 +53,20 @@ AIOHandler::AIOHandler(std::shared_ptr<PSIO> psio)
 }
 AIOHandler::~AIOHandler()
 {
+    synchronize();
     delete locked_;
-}
-std::shared_ptr<std::thread> AIOHandler::get_thread()
-{
-    return thread_;
 }
 void AIOHandler::synchronize()
 {
-    // This join may be problematic in a multithreaded env.: while we wait for the
-    // thread to finish, other threads may add work to the queue. We'd probably need
-    // a way to identify write jobs and check if they completed from external threads.
+    // Joining a thread twice is an error. Thus, we check whether
+    // the thread is joinable before joining. Non-joinable threads
+    // have either been joined, detached (no synchronization possible)
+    // or have been moved from, and another thread object controls its execution.
 //    std::unique_lock<std::mutex> lock(*locked_);
 //    lock.unlock();
   if (thread_)
-    thread_->join();
+      if(thread_->joinable())
+        thread_->join();
 }
 unsigned long int AIOHandler::read(unsigned int unit, const char *key, char *buffer, ULI size, psio_address start, psio_address *end)
 {
@@ -84,11 +84,15 @@ unsigned long int AIOHandler::read(unsigned int unit, const char *key, char *buf
 
   if (job_.size() > 1) return uniqueID_;
 
+  // In C++11, destructors of threads that are still joinable call terminate()
+  // Make sure current thread is joined before proceeding with next thread.
+  synchronize();
+
   //thread start
   thread_ = std::make_shared<std::thread>(std::bind(&AIOHandler::call_aio,this));
   return uniqueID_;
 }
-unsigned long AIOHandler::write(unsigned int unit, const char *key, char *buffer, ULI size, psio_address start, psio_address *end, bool sync)
+unsigned long AIOHandler::write(unsigned int unit, const char *key, char *buffer, ULI size, psio_address start, psio_address *end)
 {
   std::unique_lock<std::mutex> lock(*locked_);
 
@@ -104,27 +108,15 @@ unsigned long AIOHandler::write(unsigned int unit, const char *key, char *buffer
 
   //printf("Adding a write to the queue\n");
 
-  // Ensures we do not already have a thread running jobs.
-  //if (thread_ == NULL) {
-  //    fprintf(stderr,"Thread is null\n");
-  //} else if (not thread_->timed_join(std::chrono::milliseconds(0)) ) {
-  //    fprintf(stderr,"Thread is not joinable now, thus busy\n");
-  //    return;
-  //} else {
-  //    if(job_.size() > 1) {
-  //      fprintf(stderr,"%d jobs in the queue! Should NOT create thread!!\n", job_.size());
-  //    }
-  //    fprintf(stderr, "Thread is joined, need new thread\n");
-  //}
   if (job_.size() > 1) return uniqueID_;
 
   //fprintf(stderr,"Starting a thread\n");
   //thread start
-  if (thread_) {
-    printf("thread already exists.\n");
-  }
-  if (sync)
-    synchronize();
+
+  // In C++11, destructors of threads that are still joinable call terminate()
+  // Make sure current thread is joined before proceeding with next thread.
+  synchronize();
+
   thread_ = std::make_shared<std::thread>(std::bind(&AIOHandler::call_aio,this));
   return uniqueID_;
 }
@@ -141,6 +133,10 @@ unsigned long AIOHandler::read_entry(unsigned int unit, const char *key, char *b
   jobID_.push_back(uniqueID_);
 
   if (job_.size() > 1) return uniqueID_;
+
+  // In C++11, destructors of threads that are still joinable call terminate()
+  // Make sure current thread is joined before proceeding with next thread.
+  synchronize();
 
   //thread start
   thread_ = std::make_shared<std::thread>(std::bind(&AIOHandler::call_aio,this));
@@ -159,6 +155,10 @@ unsigned long AIOHandler::write_entry(unsigned int unit, const char *key, char *
   jobID_.push_back(uniqueID_);
 
   if (job_.size() > 1) return uniqueID_;
+
+  // In C++11, destructors of threads that are still joinable call terminate()
+  // Make sure current thread is joined before proceeding with next thread.
+  synchronize();
 
   //thread start
   thread_ = std::make_shared<std::thread>(std::bind(&AIOHandler::call_aio,this));
@@ -183,6 +183,10 @@ unsigned long AIOHandler::read_discont(unsigned int unit, const char *key,
 
   if (job_.size() > 1) return uniqueID_;
 
+  // In C++11, destructors of threads that are still joinable call terminate()
+  // Make sure current thread is joined before proceeding with next thread.
+  synchronize();
+
   //thread start
   thread_ = std::make_shared<std::thread>(std::bind(&AIOHandler::call_aio,this));
   return uniqueID_;
@@ -206,6 +210,10 @@ unsigned long AIOHandler::write_discont(unsigned int unit, const char *key,
 
   if (job_.size() > 1) return uniqueID_;
 
+  // In C++11, destructors of threads that are still joinable call terminate()
+  // Make sure current thread is joined before proceeding with next thread.
+  synchronize();
+
   //thread start
   thread_ = std::make_shared<std::thread>(std::bind(&AIOHandler::call_aio,this));
   return uniqueID_;
@@ -224,6 +232,10 @@ unsigned long AIOHandler::zero_disk(unsigned int unit, const char *key,
   jobID_.push_back(uniqueID_);
 
   if (job_.size() > 1) return uniqueID_;
+
+  // In C++11, destructors of threads that are still joinable call terminate()
+  // Make sure current thread is joined before proceeding with next thread.
+  synchronize();
 
   //thread start
   thread_ = std::make_shared<std::thread>(std::bind(&AIOHandler::call_aio,this));
@@ -248,6 +260,10 @@ unsigned long AIOHandler::write_iwl(unsigned int unit, const char *key,
   jobID_.push_back(uniqueID_);
 
   if (job_.size() > 1) return uniqueID_;
+
+  // In C++11, destructors of threads that are still joinable call terminate()
+  // Make sure current thread is joined before proceeding with next thread.
+  synchronize();
 
   //thread start
   thread_ = std::make_shared<std::thread>(std::bind(&AIOHandler::call_aio,this));

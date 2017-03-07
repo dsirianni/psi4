@@ -3,7 +3,7 @@
 .. #
 .. # Psi4: an open-source quantum chemistry software package
 .. #
-.. # Copyright (c) 2007-2016 The Psi4 Developers.
+.. # Copyright (c) 2007-2017 The Psi4 Developers.
 .. #
 .. # The copyrights for code used from other parties are included in
 .. # the corresponding files.
@@ -70,11 +70,12 @@ override the builtins (in the input file, not in the C++ code).
 The physical constants used within |PSIfour|, which are automatically
 made available within all |PSIfour| input files.
 
-.. literalinclude:: @SFNX_INCLUDE@psi4/driver/p4const/physconst.py
+.. literalinclude:: @SFNX_INCLUDE@psi4/driver/constants/physconst.py
    :lines: 28-
 
-The ``psi_`` prefix is to prevent clashes with user-defined variables in
-|PSIfour| input files.
+In Psithon input files, prepend physical constants with ``psi_`` to
+prevent clashes with user-defined variables (*e.g.*, ``psi_h``). In
+PsiAPI mode, access as, *e.g.*, ``psi4.constants.h``.
 
 .. index:: memory
 .. _`sec:memory`:

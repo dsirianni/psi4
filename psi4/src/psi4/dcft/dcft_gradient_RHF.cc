@@ -3,7 +3,7 @@
  *
  * Psi4: an open-source quantum chemistry software package
  *
- * Copyright (c) 2007-2016 The Psi4 Developers.
+ * Copyright (c) 2007-2017 The Psi4 Developers.
  *
  * The copyrights for code used from other parties are included in
  * the corresponding files.
@@ -808,6 +808,11 @@ DCFTSolver::compute_ewdm_odc_RHF()
 
     // Presort TPDM (MO) for Deriv use
     presort_mo_tpdm_AA();
+
+    delete [] alpha_pitzer_to_corr;
+    delete [] beta_pitzer_to_corr;
+    delete [] aocc_qt;
+    delete [] bocc_qt;
 
     psio_->close(PSIF_DCFT_DENSITY, 1);
 }

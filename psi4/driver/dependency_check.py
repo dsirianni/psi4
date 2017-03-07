@@ -3,7 +3,7 @@
 #
 # Psi4: an open-source quantum chemistry software package
 #
-# Copyright (c) 2007-2016 The Psi4 Developers.
+# Copyright (c) 2007-2017 The Psi4 Developers.
 #
 # The copyrights for code used from other parties are included in
 # the corresponding files.
@@ -39,7 +39,7 @@ except:
         - sudo yum install numpy
         - sudo apt-get install python-numpy
         - brew install numpy
-    """ 
+    """
     raise ImportError(msg)
 
 # Import plugin add-ons here for now
@@ -47,7 +47,8 @@ try:
     import csx4psi
 except ImportError:
     pass
+
 try:
-    import v2rdm_casscf
+    from . import pasture
 except ImportError:
     pass

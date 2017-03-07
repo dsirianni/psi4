@@ -3,7 +3,7 @@
  *
  * Psi4: an open-source quantum chemistry software package
  *
- * Copyright (c) 2007-2016 The Psi4 Developers.
+ * Copyright (c) 2007-2017 The Psi4 Developers.
  *
  * The copyrights for code used from other parties are included in
  * the corresponding files.
@@ -239,7 +239,7 @@ protected:
     int bench_;
     /// Memory available, in doubles, defaults to 256 MB (32 M doubles)
     unsigned long int memory_;
-    /// Number of OpenMP threads (defaults to 1 in no OpenMP, omp_get_max_thread() otherwise)
+    /// Number of OpenMP threads (defaults to 1 in no OpenMP, Process::environment.get_n_threads() otherwise)
     int omp_nthread_;
     /// Integral cutoff (defaults to 0.0)
     double cutoff_;
@@ -729,8 +729,9 @@ public:
 class GTFockJK: public JK{
    private:
       ///The actual instance that does the implementing
-
       std::shared_ptr<MinimalInterface> Impl_;
+      int NMats_ = 0;
+      
    protected:
       /// Do we need to backtransform to C1 under the hood?
       virtual bool C1() const { return true; }
@@ -757,9 +758,13 @@ class GTFockJK: public JK{
        *         matrices you'll be passing in are symmetric.
        */
       GTFockJK(std::shared_ptr<psi::BasisSet> Primary,
-            size_t NMats=1,
-            bool AreSymm=true);
-
+            size_t NMats,
+            bool AreSymm);
+      /** \brief Your interface to GTFock that works well with libfock
+      *   GTFock needs number of densities and symmetric at initialization
+      *   This code calls GTFock once the number of densities was read from jk object
+      */
+      GTFockJK(std::shared_ptr<psi::BasisSet> Primary);
 };
 
 /**

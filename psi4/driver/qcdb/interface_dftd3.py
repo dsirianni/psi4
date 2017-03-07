@@ -3,7 +3,7 @@
 #
 # Psi4: an open-source quantum chemistry software package
 #
-# Copyright (c) 2007-2016 The Psi4 Developers.
+# Copyright (c) 2007-2017 The Psi4 Developers.
 #
 # The copyrights for code used from other parties are included in
 # the corresponding files.
@@ -244,12 +244,12 @@ def run_dftd3(self, func=None, dashlvl=None, dashparam=None, dertype=None, verbo
         psi_dashdderiv.set(dashdderiv)
 
     # Print program output to file if verbose
-    if isP4regime:
+    if not verbose and isP4regime:
         verbose = True if core.get_option('SCF', 'PRINT') >= 3 else False
     if verbose:
 
         text = '\n  ==> DFTD3 Output <==\n'
-        text += out
+        text += out.decode('utf-8')
         if dertype != 0:
             with open(derivfile, 'r') as handle:
                 text += handle.read().replace('D', 'E')

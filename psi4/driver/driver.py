@@ -3,7 +3,7 @@
 #
 # Psi4: an open-source quantum chemistry software package
 #
-# Copyright (c) 2007-2016 The Psi4 Developers.
+# Copyright (c) 2007-2017 The Psi4 Developers.
 #
 # The copyrights for code used from other parties are included in
 # the corresponding files.
@@ -46,7 +46,7 @@ from psi4.driver import driver_nbody
 from psi4.driver import p4util
 # from psi4.driver.inputparser import parse_options_block
 
-from psi4.driver.procedures import *
+from psi4.driver.procrouting import *
 from psi4.driver.p4util.exceptions import *
 # never import wrappers or aliases into this file
 
@@ -81,6 +81,9 @@ def _find_derivative_type(ptype, method_name, user_dertype):
         if not isinstance(user_dertype, int):
             raise ValidationError("_find_derivative_type: user_dertype should only be None or int!")
         dertype = user_dertype
+
+    if (core.get_global_option('INTEGRAL_PACKAGE') == 'ERD') and (dertype != 0):
+        raise ValidationError('INTEGRAL_PACKAGE ERD does not play nicely with derivatives, so stopping.')
 
     # Summary validation
     if (dertype == 2) and (method_name in procedures['hessian']):
@@ -148,6 +151,10 @@ def energy(name, **kwargs):
     | scf                     | Hartree--Fock (HF) or density functional theory (DFT) :ref:`[manual] <sec:scf>`                               |
     +-------------------------+---------------------------------------------------------------------------------------------------------------+
     | hf                      | HF self consistent field (SCF) :ref:`[manual] <sec:scf>`                                                      |
+    +-------------------------+---------------------------------------------------------------------------------------------------------------+
+    | hf3c                    | HF with dispersion, BSSE, and basis set corrections :ref:`[manual] <sec:gcp>`                                 |
+    +-------------------------+---------------------------------------------------------------------------------------------------------------+
+    | pbeh3c                  | PBEh with dispersion, BSSE, and basis set corrections :ref:`[manual] <sec:gcp>`                               |
     +-------------------------+---------------------------------------------------------------------------------------------------------------+
     | dcft                    | density cumulant functional theory :ref:`[manual] <sec:dcft>`                                                 |
     +-------------------------+---------------------------------------------------------------------------------------------------------------+
@@ -826,6 +833,8 @@ def optimize(name, **kwargs):
 
     :returns: (*float*, :py:class:`~psi4.core.Wavefunction`) |w--w| energy and wavefunction when **return_wfn** specified.
 
+    :raises: psi4.ConvergenceError if |optking__geom_maxiter| exceeded without reaching geometry convergence.
+
     :PSI variables:
 
     .. hlist::
@@ -1132,12 +1141,12 @@ def optimize(name, **kwargs):
 
         n += 1
 
-    core.print_out('\tOptimizer: Did not converge!')
     if core.get_option('OPTKING', 'INTCOS_GENERATE_EXIT') == False:
         if core.get_option('OPTKING', 'KEEP_INTCOS') == False:
             core.opt_clean()
 
     optstash.restore()
+    raise ConvergenceError("""geometry optimization""", n - 1)
 
 
 def hessian(name, **kwargs):
@@ -1844,7 +1853,7 @@ def molden(wfn, filename=None, density_a=None, density_b=None, dovirtual=None):
             NO_Cb = NO_Ca
 
         mw = core.MoldenWriter(wfn)
-        mw.writeNO(filename, NO_Ca, NO_Cb, NO_occa, NO_occb)
+        mw.write(filename, NO_Ca, NO_Cb, NO_occa, NO_occb, NO_occa, NO_occb, dovirt)
 
     else:
         try:

@@ -3,7 +3,7 @@
  *
  * Psi4: an open-source quantum chemistry software package
  *
- * Copyright (c) 2007-2016 The Psi4 Developers.
+ * Copyright (c) 2007-2017 The Psi4 Developers.
  *
  * The copyrights for code used from other parties are included in
  * the corresponding files.
@@ -392,6 +392,9 @@ protected:
 
     /** Form X'(FDS - SDF)X (for DIIS) **/
     virtual SharedMatrix form_FDSmSDF(SharedMatrix Fso, SharedMatrix Dso);
+
+    /** Performs any operations required for a incoming guess **/
+    virtual void format_guess();
 
     /** Save orbitals to use later as a guess **/
     // virtual void save_orbitals();

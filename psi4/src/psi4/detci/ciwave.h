@@ -3,7 +3,7 @@
  *
  * Psi4: an open-source quantum chemistry software package
  *
- * Copyright (c) 2007-2016 The Psi4 Developers.
+ * Copyright (c) 2007-2017 The Psi4 Developers.
  *
  * The copyrights for code used from other parties are included in
  * the corresponding files.
@@ -91,7 +91,7 @@ public:
      * @param  orbital_name fzc, drc, docc, act, ras1, ras2, ras3, ras4, pop, vir, fzv, drv, or all
      * @return C            Returns the appropriate orbitals in the SO basis.
      */
-    SharedMatrix get_orbitals(const std::string& orbital_name);
+    SharedMatrix get_orbitals(const std::string &orbital_name);
 
     /**!
      * Similar to wavefunction.Ca_subset(); however, this version knows about all of the CI
@@ -245,6 +245,9 @@ public:
      */
     void print_vector(SharedCIVector vec, int root);
 
+    /**
+     * Compute the state-transfer operator. Currently in construction and not to be used.
+     */
     void compute_state_transfer(SharedCIVector ref, int ref_vec,
                                 SharedMatrix prop, SharedCIVector ret);
 
@@ -254,23 +257,51 @@ public:
     void compute_mpn();
 
     // Build CI quantities
+
+    /**
+     * Forms the "special" OPDM of the current Dvec.
+     */
     void form_opdm();
+
+    /**
+     * Forms the "special" TPDM of the current Dvec.
+     */
     void form_tpdm();
 
-    // Extraneous
+    /**
+     * Form CI Natural Orbitals (Warning! must build the OPDM beforehand)
+     */
+    void ci_nat_orbs();
+
+    // Cleanup Functions
+
+    /**
+     * Cleans up the strings, H0Block, and CIVectors associated with this Wavefunction.
+     */
     void cleanup_ci();
+
+    /**
+     * Cleans up the DPD library and associated integrals associated with this Wavefunction.
+     */
     void cleanup_dpd();
+
+    /**
+     * Sets the diag_h guess option. !Expert option.
+     * @param guess CI Guess: (UNIT, H0_BLOCK, or DFLIE)
+     */
+    void set_ci_guess(std::string guess);
 
     // Returns a new SOMCSCF object
     std::shared_ptr<SOMCSCF> mcscf_object();
 
     /// Functions below this line should be used for debug use only
 
-    /**!
-     Builds the full CI hamiltonian for debugging purposes. Currently limits itself to a matrix
-     of 1GiB in size.
-     * @ return CI hamiltonian
-     **/
+    /**
+     *  Builds the full CI hamiltonian for debugging purposes. Currently limits itself to a matrix
+     * of 40% of Psi4's memory in size.
+     * @param  hsize Compute the first hsize elements of the CI Hamiltonian
+     * @return       The requested CI Hamiltonian.
+     */
     SharedMatrix hamiltonian(size_t hsize = 0);
 
 private:
@@ -331,6 +362,13 @@ private:
     void transform_dfmcscf_ints(bool approx_only = false);
     void rotate_dfmcscf_twoel_ints(SharedMatrix K, SharedVector twoel_out);
 
+    /// MO transformation through TeraCHEM-like
+    /// Added in by Kevin Patrick Hannon
+    void transform_mcscf_ints_ao(bool approx_only = false);
+    void setup_mcscf_ints_ao();
+    SharedMatrix tei_raaa_;
+    SharedMatrix tei_aaaa_;
+
     /// => Globals <= //
     struct stringwr **alplist_;
     struct stringwr **betlist_;
@@ -357,9 +395,8 @@ private:
     void H0block_filter_setup(void);
     void H0block_fill(void);
     void H0block_coupling_calc(double E);
-    void print_config(int nbf, int num_alp_el, int num_bet_el,
-       struct stringwr *stralp, struct stringwr *strbet, int num_drc_orbs,
-       char *outstring);
+    std::string print_config(int nbf, int num_alp_el, int num_bet_el,
+	  struct stringwr *stralp, struct stringwr *strbet, int num_drc_orbs);
 
     /// => Slater Matrix Elements <= //
     double matrix_element(SlaterDeterminant* I, SlaterDeterminant* J);
@@ -434,12 +471,10 @@ private:
     std::vector<std::vector<SharedMatrix> > opdm(SharedCIVector Ivec, SharedCIVector Jvec,
                                                 std::vector<std::tuple<int, int> > states_vec);
     SharedMatrix opdm_add_inactive(SharedMatrix opdm, double value, bool virt=false);
-    void opdm_properties(void);
     void opdm_block(struct stringwr **alplist, struct stringwr **betlist,
             double **onepdm_a, double **onepdm_b, double **CJ, double **CI, int Ja_list,
             int Jb_list, int Jnas, int Jnbs, int Ia_list, int Ib_list,
             int Inas, int Inbs);
-    void ci_nat_orbs();
 
     // OPDM holders, opdm_map holds lots of active-active opdms
     // opdm_, opdm_a_, etc are for "the" current OPDM

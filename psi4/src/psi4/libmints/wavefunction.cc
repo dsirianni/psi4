@@ -3,7 +3,7 @@
  *
  * Psi4: an open-source quantum chemistry software package
  *
- * Copyright (c) 2007-2016 The Psi4 Developers.
+ * Copyright (c) 2007-2017 The Psi4 Developers.
  *
  * The copyrights for code used from other parties are included in
  * the corresponding files.
@@ -337,46 +337,26 @@ void Wavefunction::common_init()
     nalpha_ = nbeta_ + multiplicity - 1;
 }
 
-void Wavefunction::map_irreps(std::vector<int *> &arrays)
+Dimension Wavefunction::map_irreps(const Dimension& dimpi)
 {
     std::shared_ptr<PointGroup> full = Process::environment.parent_symmetry();
     // If the parent symmetry hasn't been set, no displacements have been made
-    if (!full) return;
+    if (!full) return dimpi;
     std::shared_ptr<PointGroup> sub = molecule_->point_group();
 
     // If the point group between the full and sub are the same return
     if (full->symbol() == sub->symbol())
-        return;
+        return dimpi;
 
     // Build the correlation table between full, and subgroup
     CorrelationTable corrtab(full, sub);
-    int nirreps = corrtab.n();
-    std::vector<int *>::iterator iter = arrays.begin();
-    for (; iter != arrays.end(); ++iter) {
-        int *array = *iter;
-        int temp[8] = {0, 0, 0, 0, 0, 0, 0, 0};
-        for (int h = 0; h < nirreps; ++h) {
-            int target = corrtab.gamma(h, 0);
-            temp[target] += array[h];
-        }
-        for (int h = 0; h < nirreps; ++h)
-            array[h] = temp[h];
+    Dimension mapped_dimpi(sub->char_table().nirrep());
+    for (int h = 0; h < full->char_table().nirrep(); ++h) {
+        int target = corrtab.gamma(h, 0);
+        mapped_dimpi[target] += dimpi[h];
     }
-}
 
-void Wavefunction::map_irreps(int *&array)
-{
-    std::vector<int *> vec;
-    vec.push_back(array);
-    map_irreps(vec);
-}
-
-void Wavefunction::map_irreps(Dimension &array)
-{
-    int *int_array = array;
-    std::vector<int *> vec;
-    vec.push_back(int_array);
-    map_irreps(vec);
+    return mapped_dimpi;
 }
 
 void Wavefunction::initialize_singletons()
@@ -438,7 +418,7 @@ std::shared_ptr<BasisSet> Wavefunction::get_basisset(std::string label)
         return basisset_;
     } else if (basissets_.count(label) == 0){
         outfile->Printf("Could not find requested basisset (%s).", label.c_str());
-        throw PSIEXCEPTION("Wavefunction::get_basisset: Requested basis set was not set!\n");
+        throw PSIEXCEPTION("Wavefunction::get_basisset: Requested basis set (" + label + ") was not set!\n");
     } else {
         return basissets_[label];
     }
@@ -450,6 +430,14 @@ void Wavefunction::set_basisset(std::string label, std::shared_ptr<BasisSet> bas
     } else {
         basissets_[label] = basis;
     }
+}
+
+bool Wavefunction::basisset_exists(std::string label)
+{
+    if (basissets_.count(label) == 0)
+        return false;
+    else
+        return true;
 }
 
 std::shared_ptr<SOBasisSet> Wavefunction::sobasisset() const

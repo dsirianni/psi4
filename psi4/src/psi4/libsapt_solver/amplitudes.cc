@@ -3,7 +3,7 @@
  *
  * Psi4: an open-source quantum chemistry software package
  *
- * Copyright (c) 2007-2016 The Psi4 Developers.
+ * Copyright (c) 2007-2017 The Psi4 Developers.
  *
  * The copyrights for code used from other parties are included in
  * the corresponding files.
@@ -620,7 +620,7 @@ void SAPT2::ijkl_to_ikjl(double *tARAR, int ilength, int jlength, int klength,
 
   for(int i=0; i<ilength; i++) {
     for(int l=0; l<llength; l++) {
-      long int ijkl = i*jlength*klength*llength + l;
+      long int ijkl = (long int)i*jlength*klength*llength + l;
       C_DCOPY(jlength*klength,&(tARAR[ijkl]),llength,X,1);
       for(int j=0; j<jlength; j++) {
         for(int k=0; k<klength; k++) {

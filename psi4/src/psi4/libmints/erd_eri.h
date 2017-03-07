@@ -3,7 +3,7 @@
  *
  * Psi4: an open-source quantum chemistry software package
  *
- * Copyright (c) 2007-2016 The Psi4 Developers.
+ * Copyright (c) 2007-2017 The Psi4 Developers.
  *
  * The copyrights for code used from other parties are included in
  * the corresponding files.
@@ -117,6 +117,8 @@ protected:
     F_BOOL screen_;
     /// Whether ERD should use spherical harmonic basis functions
     F_BOOL spheric_;
+    /// Do any of the basis sets have spherical functions
+    bool has_puream_;
     /// Not relating to the monotony of integral computations, but whether the basis sets are all the same
     bool same_bs_;
 

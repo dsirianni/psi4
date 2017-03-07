@@ -3,7 +3,7 @@
  *
  * Psi4: an open-source quantum chemistry software package
  *
- * Copyright (c) 2007-2016 The Psi4 Developers.
+ * Copyright (c) 2007-2017 The Psi4 Developers.
  *
  * The copyrights for code used from other parties are included in
  * the corresponding files.
@@ -157,21 +157,16 @@ double CIWavefunction::compute_energy() {
     }
 
     // Finished CI, setting wavefunction parameters
-    if (!Parameters_->zaptn && (Parameters_->opdm || Parameters_->transdens)) {
+    if (!Parameters_->zaptn &&
+        (Parameters_->opdm || Parameters_->transdens || Parameters_->opdm_diag)) {
         form_opdm();
     }
 
-    if (Parameters_->opdm_diag) ci_nat_orbs();
+    // if (Parameters_->opdm_diag) ci_nat_orbs();
     if (Parameters_->tpdm) form_tpdm();
-    if (print_ > 0) {
-        outfile->Printf("\t\t \"A good bug is a dead bug\" \n\n");
-        outfile->Printf("\t\t\t - Starship Troopers\n\n");
-        outfile->Printf("\t\t \"I didn't write FORTRAN.  That's the problem.\"\n\n");
-        outfile->Printf("\t\t\t - Edward Valeev\n\n");
-    }
 
-    cleanup_ci();
-    cleanup_dpd();
+    // cleanup_ci();
+    // cleanup_dpd();
 
     return Process::environment.globals["CURRENT ENERGY"];
 }
@@ -357,9 +352,9 @@ SharedMatrix CIWavefunction::get_opdm(int Iroot, int Jroot,
         if (Jroot == -1) Jroot = Iroot;
 
         std::stringstream opdm_name;
-        if (spin == "SUM") opdm_name << "MO-basis OPDM <" << Iroot+1 << "| Etu |" << Jroot+1 << ">";
-        else if (spin == "A") opdm_name << "MO-basis Alpha OPDM <" << Iroot+1 << "| Etu |" << Jroot+1 << ">";
-        else if (spin == "B") opdm_name << "MO-basis Beta OPDM <" << Iroot+1 << "| Etu |" << Jroot+1 << ">";
+        if (spin == "SUM") opdm_name << "MO-basis OPDM <" << Iroot << "| Etu |" << Jroot << ">";
+        else if (spin == "A") opdm_name << "MO-basis Alpha OPDM <" << Iroot << "| Etu |" << Jroot << ">";
+        else if (spin == "B") opdm_name << "MO-basis Beta OPDM <" << Iroot << "| Etu |" << Jroot << ">";
         else throw PSIEXCEPTION("CIWavefunction::get_opdm: Spin type must be A, B, or SUM.");
 
         if (opdm_map_.count(opdm_name.str()) == 0){
@@ -498,8 +493,20 @@ void CIWavefunction::cleanup_dpd(void) {
         mcscf_object_init_ = false;
     }
 }
+void CIWavefunction::set_ci_guess(std::string guess) {
+    if (guess == "UNIT") {
+        Parameters_->guess_vector = PARM_GUESS_VEC_UNIT;
+    } else if (guess == "H0_BLOCK") {
+        Parameters_->guess_vector = PARM_GUESS_VEC_H0_BLOCK;
+    } else if (guess == "DFILE") {
+        Parameters_->guess_vector = PARM_GUESS_VEC_DFILE;
+    } else {
+        throw PSIEXCEPTION(
+            "CIWavefunction::set_ci_guess: Guess can only be UNIT, H0_BLOCK, or DFILE");
+    }
+}
 void CIWavefunction::title(bool is_mcscf) {
-    if (is_mcscf){
+    if (is_mcscf) {
         outfile->Printf("\n");
         outfile->Printf("         ---------------------------------------------------------\n");
         outfile->Printf("                Multi-Configurational Self-Consistent Field\n");
@@ -530,10 +537,7 @@ SharedCIVector CIWavefunction::new_civector(int maxnvect, int filenum,
     return civect;
 }
 SharedCIVector CIWavefunction::D_vector(){
-    SharedCIVector civect(new CIvect(Parameters_->icore, Parameters_->maxnvect,
-                                     1, Parameters_->d_filenum, CIblks_, CalcInfo_,
-                                     Parameters_, H0block_, true));
-    civect->init_io_files(true);
+    SharedCIVector civect = new_civector(Parameters_->num_roots, Parameters_->d_filenum, true, true);
     return civect;
 }
 SharedCIVector CIWavefunction::Hd_vector(int hd_type) {
@@ -550,7 +554,7 @@ SharedCIVector CIWavefunction::Hd_vector(int hd_type) {
 SharedMatrix CIWavefunction::hamiltonian(size_t hsize) {
     BIGINT size = (hsize) ? (BIGINT)hsize : CIblks_->vectlen;
     double h_size = (double)(8 * size * size);
-    if (h_size > (Process::environment.get_memory() * 0.8)) {
+    if (h_size > (Process::environment.get_memory() * 0.4)) {
         outfile->Printf("CIWave::Requsted size of the hamiltonian is %lf!\n", h_size / 1E9);
         throw PSIEXCEPTION("CIWave::hamiltonian: Size is too large for"
                            "explicit hamiltonian build");
@@ -622,7 +626,11 @@ void CIWavefunction::init_mcscf_object(){
     if (Parameters_->mcscf_type == "DF") {
         if (!df_ints_init_) setup_dfmcscf_ints();
         somcscf_ = std::shared_ptr<SOMCSCF>(new DFSOMCSCF(jk_, dferi_, AO2SO_, H_));
-    } else {
+    } else if (Parameters_->mcscf_type == "AO" ){
+        if (!ints_init_) setup_mcscf_ints_ao();
+        somcscf_ = std::shared_ptr<SOMCSCF>(new IncoreSOMCSCF(jk_, AO2SO_, H_));
+    }
+    else {
         if (!ints_init_) setup_mcscf_ints();
         somcscf_ = std::shared_ptr<SOMCSCF>(new DiskSOMCSCF(jk_, ints_, AO2SO_, H_));
     }

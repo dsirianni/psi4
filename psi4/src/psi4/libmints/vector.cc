@@ -3,7 +3,7 @@
  *
  * Psi4: an open-source quantum chemistry software package
  *
- * Copyright (c) 2007-2016 The Psi4 Developers.
+ * Copyright (c) 2007-2017 The Psi4 Developers.
  *
  * The copyrights for code used from other parties are included in
  * the corresponding files.
@@ -122,7 +122,7 @@ SharedVector Vector::create(const std::string &name, const Dimension &dim)
 
 void Vector::init(int nirreps, int *dimpi)
 {
-    dimpi_.init("", nirreps);
+    dimpi_.init(nirreps);
     nirrep_ = nirreps;
     dimpi_ = dimpi;
     alloc();
@@ -131,7 +131,7 @@ void Vector::init(int nirreps, int *dimpi)
 void Vector::init(int nirreps, const int *dimpi, const std::string &name)
 {
     name_ = name;
-    dimpi_.init("", nirreps);
+    dimpi_.init(nirreps);
     dimpi_ = dimpi;
     alloc();
 }
@@ -146,7 +146,7 @@ void Vector::init(const Dimension &v)
 
 Vector *Vector::clone()
 {
-    Vector *temp = new Vector(nirrep_, dimpi_);
+    Vector *temp = new Vector(dimpi_);
     temp->copy(this);
     return temp;
 }
@@ -280,83 +280,55 @@ double *Vector::to_block_vector()
     return temp;
 }
 
-void Vector::gemv(bool transa, double alpha, Matrix *A, Vector *X, double beta)
-{
+void Vector::gemv(bool transa, double alpha, Matrix *A, Vector *X, double beta) {
     char trans = transa ? 't' : 'n';
 
     for (int h = 0; h < nirrep_; ++h) {
-        C_DGEMV(trans, A->rowspi_[h], A->colspi_[h], alpha, &(A->matrix_[h][0][0]),
-                A->rowspi_[h], &(X->vector_[h][0]), 1, beta, &(vector_[h][0]), 1);
+        C_DGEMV(trans, A->rowspi_[h], A->colspi_[h], alpha, &(A->matrix_[h][0][0]), A->rowspi_[h],
+                &(X->vector_[h][0]), 1, beta, &(vector_[h][0]), 1);
     }
 }
 
-double Vector::dot(Vector *X)
-{
-    double tmp = 0.0;
-
-    for (int h = 0; h < nirrep_; ++h) {
-        if (dimpi_[h] != X->dimpi_[h]) {
-            printf("Vector::dot: Vectors are not of the same size.\n");
-            return 0.0;
-        }
-        for (int i = 0; i < dimpi_[h]; ++i) {
-            tmp += vector_[h][i] * X->vector_[h][i];
-        }
+double Vector::vector_dot(const std::shared_ptr<Vector> &other) { return vector_dot(*other.get()); }
+double Vector::vector_dot(const Vector &other) {
+    if (v_.size() != other.v_.size()) {
+        throw PSIEXCEPTION("Vector::vector_dot: Vector sizes do not match!");
     }
 
-    return tmp;
+    return C_DDOT(v_.size(), v_.data(), 1, const_cast<double *>(other.v_.data()), 1);
 }
-
-double Vector::norm()
-{
-    double tmp = 0.0;
-
-    for (int h = 0; h < nirrep_; ++h) {
-        for (int i = 0; i < dimpi_[h]; ++i) {
-            tmp += vector_[h][i] * vector_[h][i];
-        }
+double Vector::dot(Vector *X) {
+    if (v_.size() != X->v_.size()) {
+        throw PSIEXCEPTION("Vector::vector_dot: Vector sizes do not match!");
     }
 
-    return tmp;
+    return C_DDOT(v_.size(), v_.data(), 1, X->v_.data(), 1);
 }
 
-template<class T>
-struct scale_vector
-{
-    typedef T data_type;
-    typedef data_type result_type;
+double Vector::sum_of_squares() { return C_DDOT(v_.size(), v_.data(), 1, v_.data(), 1); }
+double Vector::norm() { return sqrt(sum_of_squares()); }
+double Vector::rms() { return sqrt(sum_of_squares() / v_.size()); }
 
-    const data_type scalar;
+void Vector::scale(const double &sc) { C_DSCAL(v_.size(), sc, v_.data(), 1); }
 
-    scale_vector(const data_type &sc) : scalar(sc)
-    {}
+void Vector::add(const std::shared_ptr<Vector> &other) { axpy(1.0, *other.get()); }
+void Vector::add(const Vector &other) { axpy(1.0, other); }
 
-    result_type operator()(data_type value) const
-    {
-        value *= scalar;
-        return value;
+void Vector::subtract(const std::shared_ptr<Vector> &other) { axpy(-1.0, *other.get()); }
+void Vector::subtract(const Vector &other) { axpy(-1.0, other); }
+
+void Vector::axpy(double scale, const SharedVector &other) { axpy(scale, *other.get()); }
+void Vector::axpy(double scale, const Vector &other) {
+    if (v_.size() != other.v_.size()) {
+        throw PSIEXCEPTION("Vector::axpy: Vector sizes do not match!");
     }
-};
 
-void Vector::scale(const double &sc)
-{
-    std::transform(v_.begin(), v_.end(), v_.begin(), scale_vector<double>(sc));
+    C_DAXPY(v_.size(), scale, const_cast<double *>(other.v_.data()), 1, v_.data(), 1);
 }
 
-void Vector::add(const std::vector<double> &rhs)
-{
-    size_t min = std::min(rhs.size(), v_.size());
-    for (size_t i = 0; i < min; ++i)
-        v_[i] += rhs[i];
-}
+void Vector::send() {}
 
-void Vector::send()
-{
-}
-
-void Vector::recv()
-{
-}
+void Vector::recv() {}
 
 void Vector::bcast(int)
 {

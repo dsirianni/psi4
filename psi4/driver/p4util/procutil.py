@@ -3,7 +3,7 @@
 #
 # Psi4: an open-source quantum chemistry software package
 #
-# Copyright (c) 2007-2016 The Psi4 Developers.
+# Copyright (c) 2007-2017 The Psi4 Developers.
 #
 # The copyrights for code used from other parties are included in
 # the corresponding files.
@@ -326,6 +326,8 @@ def prepare_options_for_modules(changedOnly=False, commandsInsteadDict=False):
     commands = ''
     for opt in core.get_global_option_list():
         if core.has_global_option_changed(opt) or not changedOnly:
+            if opt in ['DFT_CUSTOM_FUNCTIONAL', 'EXTERN']:  # Feb 2017 hack
+                continue
             val = core.get_global_option(opt)
             options['GLOBALS'][opt] = {'value': val,
                                        'has_changed': core.has_global_option_changed(opt)}

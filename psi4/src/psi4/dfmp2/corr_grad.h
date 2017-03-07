@@ -3,7 +3,7 @@
  *
  * Psi4: an open-source quantum chemistry software package
  *
- * Copyright (c) 2007-2016 The Psi4 Developers.
+ * Copyright (c) 2007-2017 The Psi4 Developers.
  *
  * The copyrights for code used from other parties are included in
  * the corresponding files.
@@ -48,8 +48,8 @@ protected:
     int bench_;
     /// Memory available, in doubles, defaults to 256 MB (32 M doubles)
     unsigned long int memory_;
-    /// Number of OpenMP threads (defaults to 1 in no OpenMP, omp_get_max_thread() otherwise)
-    int omp_num_threads_;
+    /// Number of OpenMP threads (defaults to 1 in no OpenMP, Process::environment.get_n_threads() otherwise)
+    int nthreads_;
     /// Integral cutoff (defaults to 0.0)
     double cutoff_;
 
@@ -130,7 +130,7 @@ public:
      *        integral generation objects (BLAS/LAPACK can still
      *        run with their original maximum number)
      */
-    void set_omp_num_threads(int omp_nthread) { omp_num_threads_ = omp_nthread; }
+    void set_omp_num_threads(int omp_nthread) { nthreads_ = omp_nthread; }
     /// Print flag (defaults to 1)
     void set_print(int print) { print_ = print; }
     /// Debug flag (defaults to 0)

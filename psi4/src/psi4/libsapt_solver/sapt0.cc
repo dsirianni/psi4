@@ -3,7 +3,7 @@
  *
  * Psi4: an open-source quantum chemistry software package
  *
- * Copyright (c) 2007-2016 The Psi4 Developers.
+ * Copyright (c) 2007-2017 The Psi4 Developers.
  *
  * The copyrights for code used from other parties are included in
  * the corresponding files.
@@ -601,7 +601,7 @@ void SAPT0::df_integrals()
 
   int nthreads = 1;
   #ifdef _OPENMP
-    nthreads = omp_get_max_threads();
+    nthreads = Process::environment.get_n_threads();
   #endif
   int rank = 0;
 
@@ -1116,7 +1116,7 @@ void SAPT0::df_integrals_aio()
 
   int nthreads = 1;
   #ifdef _OPENMP
-    nthreads = omp_get_max_threads();
+    nthreads = Process::environment.get_n_threads();
   #endif
   int rank = 0;
 
@@ -1670,7 +1670,7 @@ void SAPT0::oo_df_integrals()
 
   int nthreads = 1;
   #ifdef _OPENMP
-    nthreads = omp_get_max_threads();
+    nthreads = Process::environment.get_n_threads();
   #endif
   int rank = 0;
 

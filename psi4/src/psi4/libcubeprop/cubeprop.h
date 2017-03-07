@@ -3,7 +3,7 @@
  *
  * Psi4: an open-source quantum chemistry software package
  *
- * Copyright (c) 2007-2016 The Psi4 Developers.
+ * Copyright (c) 2007-2017 The Psi4 Developers.
  *
  * The copyrights for code used from other parties are included in
  * the corresponding files.
@@ -62,6 +62,8 @@ protected:
     std::vector<std::tuple<double, int, int> > info_a_;
     /// Info for beta electrons (epsilon,rel. index,irrep)
     std::vector<std::tuple<double, int, int> > info_b_;
+    /// Auxiliary Basis Set if Any
+    std::shared_ptr<BasisSet> auxiliary_;
 
     // => Computers <= //
 

@@ -3,7 +3,7 @@
  *
  * Psi4: an open-source quantum chemistry software package
  *
- * Copyright (c) 2007-2016 The Psi4 Developers.
+ * Copyright (c) 2007-2017 The Psi4 Developers.
  *
  * The copyrights for code used from other parties are included in
  * the corresponding files.
@@ -36,7 +36,6 @@
     #include<omp.h>
 #else
     #define omp_get_wtime() 0.0
-    #define omp_get_max_threads() 1
 #endif
 
 #include"blas.h"

@@ -3,7 +3,7 @@
  *
  * Psi4: an open-source quantum chemistry software package
  *
- * Copyright (c) 2007-2016 The Psi4 Developers.
+ * Copyright (c) 2007-2017 The Psi4 Developers.
  *
  * The copyrights for code used from other parties are included in
  * the corresponding files.
@@ -35,7 +35,7 @@
   #include <omp.h>
 #endif
 
-#ifdef __INTEL_MKL__
+#ifdef USING_LAPACK_MKL
   #include <mkl.h>
 #endif
 
@@ -64,19 +64,19 @@ protected:
   std::shared_ptr<BasisSet> elstbasis_;
   std::shared_ptr<BasisSet> zero_;
 
-  int nsoA_;
-  int nmoA_;
-  int nsoB_;
-  int nmoB_;
-  int ndf_;
-  int noccA_;
-  int foccA_;
-  int aoccA_;
-  int noccB_;
-  int foccB_;
-  int aoccB_;
-  int nvirA_;
-  int nvirB_;
+  size_t nsoA_;
+  size_t nmoA_;
+  size_t nsoB_;
+  size_t nmoB_;
+  size_t ndf_;
+  size_t noccA_;
+  size_t foccA_;
+  size_t aoccA_;
+  size_t noccB_;
+  size_t foccB_;
+  size_t aoccB_;
+  size_t nvirA_;
+  size_t nvirB_;
   int NA_;
   int NB_;
   int natomsA_;
@@ -110,7 +110,7 @@ protected:
 
   std::shared_ptr<SAPTDenominator> denom_;
 
-  int nvec_;
+  size_t nvec_;
 
   double **dAR_;
   double **dBS_;
@@ -130,7 +130,7 @@ class CPHFDIIS {
 
 private:
   int max_diis_vecs_;
-  int vec_length_;
+  size_t vec_length_;
 
   int curr_vec_;
   int num_vecs_;

@@ -3,7 +3,7 @@
  *
  * Psi4: an open-source quantum chemistry software package
  *
- * Copyright (c) 2007-2016 The Psi4 Developers.
+ * Copyright (c) 2007-2017 The Psi4 Developers.
  *
  * The copyrights for code used from other parties are included in
  * the corresponding files.
@@ -107,7 +107,7 @@ void JKGrad::common_init()
     memory_ = 32000000L;
     omp_num_threads_ = 1;
 #ifdef _OPENMP
-    omp_num_threads_ = omp_get_max_threads();
+    omp_num_threads_ = Process::environment.get_n_threads();
 #endif
 
     cutoff_ = 0.0;
@@ -129,7 +129,7 @@ void DFJKGrad::common_init()
 {
     df_ints_num_threads_ = 1;
 #ifdef _OPENMP
-    df_ints_num_threads_ = omp_get_max_threads();
+    df_ints_num_threads_ = Process::environment.get_n_threads();
 #endif
     condition_ = 1.0E-12;
     unit_a_ = 105;
@@ -2342,7 +2342,7 @@ void DirectJKGrad::common_init()
 {
     ints_num_threads_ = 1;
 #ifdef _OPENMP
-    ints_num_threads_ = omp_get_max_threads();
+    ints_num_threads_ = Process::environment.get_n_threads();
 #endif
 }
 void DirectJKGrad::print_header() const
