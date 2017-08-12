@@ -1,0 +1,29 @@
+# This script is meant to make producing publication-quality 
+# PNG images of molecular systems with PyMOL easy.  Note that
+# this is meant to be a bit more manual than Rob's infrastructure.
+
+# Zero everything out
+#cmd.reinitialize()
+
+# Show everything as sticks, no labels
+cmd.show("sticks", "all")
+
+# Visualization options
+cmd.set("light_count",10)
+cmd.set("spec_count",1)
+cmd.set("shininess", 50)
+cmd.set("specular",1)
+cmd.set("ambient",0.1)
+cmd.set("direct",0.0)
+cmd.set("reflect",1.5)
+cmd.set("depth_cue")
+cmd.set("ray_shadows",0)
+cmd.set("ray_opaque_background", "off")
+cmd.bg_color("white")
+cmd.set("orthoscopic", "off")
+
+# Zoom appropriately, don't reorient
+cmd.zoom
+
+# Raytrace to PNG image
+cmd.png("Geom.png", width=1500, height=1200, dpi=300, ray=1)
