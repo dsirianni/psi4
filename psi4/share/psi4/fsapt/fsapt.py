@@ -46,9 +46,9 @@ saptkeys_ = [
     'IndAB',
     'IndBA',
     'Disp',
+    'Total',
     'D3MZero',
     'D3MBJ',
-    'Total',
 ]
 
 # Map from atom name to charge, vDW radius, nfrozen
@@ -345,19 +345,19 @@ def extractOsaptData(filepath):
         print('No exact dispersion present.  Copying & zeroing `Elst.dat`->`Disp.dat`, and proceeding.\n')
         vals['Disp'] = np.zeros_like(np.array(readBlock('%s/Elst.dat'  % filepath, H_to_kcal_)))
 
-    # Read empirical F-SAPT0-D dispersion data
-    for d3disp in ['D3MZero', 'D3MBJ']:
-        try:
-            vals[d3disp] = np.loadtxt(f"{dirname}{os.sep}{d3disp}.dat") # Empirical F-SAPT0-D3M(0) Dispersion
-        except (FileNotFoundError, OSError):
-            continue
-
     # For total, only include exact terms
     vals['Total'] = [[0.0 for x in vals['Elst'][0]] for x2 in vals['Elst']]
     for key in ['Elst', 'Exch', 'IndAB', 'IndBA', 'Disp']:
         for k in range(len(vals['Total'])):
             for l in range(len(vals['Total'][0])):
                 vals['Total'][k][l] += vals[key][k][l]
+
+    # Read empirical F-SAPT0-D dispersion data
+    for d3disp in ['D3MZero', 'D3MBJ']:
+        try:
+            vals[d3disp] = np.loadtxt(f"{filepath}{os.sep}{d3disp}.dat") # Empirical F-SAPT0-D3M(0) Dispersion
+        except (FileNotFoundError, OSError):
+            continue
 
     return vals
 
@@ -398,10 +398,8 @@ def extractOrder2Fsapt(osapt, wsA, wsB, frags):
 
     vals = {}
     for key, value in osapt.items():
-        # No order2 for D3 dispersion, only reduced. Fragment separately
-        if 'D3' in key:
-            Edisp, vals[key] = fragmentD3Disp(value, frags) # Return is {<fA> : {<fB>: Edisp}} already
-        else:
+        # Proceed as normal for non-empirical dispersion quantities
+        if 'D3' not in key:
             vals[key] = {}
             for keyA, valueA in wsA.items():
                 vals[key][keyA] = {}
@@ -411,6 +409,15 @@ def extractOrder2Fsapt(osapt, wsA, wsB, frags):
                         for l in range(len(valueB)):
                             val += valueA[k] * valueB[l] * value[k][l]
                     vals[key][keyA][keyB] = val
+        # No order2 for D3 dispersion, only reduced. Fragment separately
+        else:
+            Edisp, vals[key] = fragmentD3Disp(value, frags) # Return is {<fA> : {<fB>: Edisp}} already
+            # Constructs total SAPT-D energy:
+            vals[f'F-SAPT0-{key}'] = copy.deepcopy(vals[key])
+            for saptkey in ['Elst', 'Exch', 'IndAB', 'IndBA']:
+                for keyA, dA in vals[saptkey].items():
+                    for keyB, value in dA.items():
+                        vals[f'F-SAPT0-{key}'][keyA][keyB] += value
 
     return vals
 
@@ -596,7 +603,7 @@ def printOrder2(order2, fragkeys):
 
     order1A = {}
     order1B = {}
-    for saptkey in saptkeys_:
+    for saptkey in order2.keys():
         order1A[saptkey] = {}
         order1B[saptkey] = {}
         for keyA in fragkeys['A']:
@@ -611,37 +618,37 @@ def printOrder2(order2, fragkeys):
             order1B[saptkey][keyB] = val
 
     order0 = {}
-    for saptkey in saptkeys_:
+    for saptkey in order2.keys():
         val = 0.0
         for keyA in fragkeys['A']:
             val += order1A[saptkey][keyA]
         order0[saptkey] = val
 
     print('%-9s %-9s ' % ('Frag1', 'Frag2'), end='')
-    for saptkey in saptkeys_:
+    for saptkey in order2.keys():
         print('%8s ' % (saptkey), end='')
     print('')
     for keyA in fragkeys['A']:
         for keyB in fragkeys['B']:
             print('%-9s %-9s ' % (keyA, keyB), end='')
-            for saptkey in saptkeys_:
+            for saptkey in order2.keys():
                 print('%8.3f ' % (order2[saptkey][keyA][keyB]), end='')
             print('')
 
     for keyA in fragkeys['A']:
         print('%-9s %-9s ' % (keyA, 'All'), end='')
-        for saptkey in saptkeys_:
+        for saptkey in order2.keys():
             print('%8.3f ' % (order1A[saptkey][keyA]), end='')
         print('')
 
     for keyB in fragkeys['B']:
         print('%-9s %-9s ' % ('All', keyB), end='')
-        for saptkey in saptkeys_:
+        for saptkey in order2.keys():
             print('%8.3f ' % (order1B[saptkey][keyB]), end='')
         print('')
 
     print('%-9s %-9s ' % ('All', 'All'), end='')
-    for saptkey in saptkeys_:
+    for saptkey in order2.keys():
         print('%8.3f ' % (order0[saptkey]), end='')
     print('')
 
@@ -838,7 +845,7 @@ class PDB:
 
 def printOrder1(dirname, order2, pdb, frags, reA = r'\S+', reB = r'\S+'):
 
-    for saptkey in saptkeys_:
+    for saptkey in order2.keys():
         E = [0.0 for x in pdb.atoms]
         for keyA in order2[saptkey].keys():
             if not re.match(reA, keyA):
