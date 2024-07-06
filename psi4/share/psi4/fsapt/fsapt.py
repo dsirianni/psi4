@@ -50,6 +50,7 @@ saptkeys_ = [
     'Exch',
     'IndAB',
     'IndBA',
+    'Ind',
     'Disp',
     'EDisp',
     'Total',
@@ -408,10 +409,17 @@ def extract_osapt_data(filepath):
     """
 
     vals = {}
+    # Read Psi4-generated files containing per-orbital F-/ISAPT term contributions
     vals['Elst']  = np.array(read_block('%s/Elst.dat'  % filepath, H_to_kcal_))
     vals['Exch']  = np.array(read_block('%s/Exch.dat'  % filepath, H_to_kcal_))
     vals['IndAB'] = np.array(read_block('%s/IndAB.dat' % filepath, H_to_kcal_))
     vals['IndBA'] = np.array(read_block('%s/IndBA.dat' % filepath, H_to_kcal_))
+    # Construct total induction as sum of Ind(A<-B) and Ind(B<-A) for visualization
+    vals['Ind'] = vals['IndAB'] + vals['IndBA']
+    # Save total induction array (in Hartree) for troubleshooting or future analysis
+    # Format each array element as 17 digits wide with 16 decimal points of precision
+    # in scientific notation (matches formatting of other Psi4-output `term.dat` files)
+    np.savetxt('Ind.dat', vals['Ind'] / H_to_kcal_, fmt='%17.16E')
     # Read exact F-SAPT0 dispersion data
     try:
         vals['Disp'] = read_block('%s/Disp.dat'  % filepath, H_to_kcal_)
